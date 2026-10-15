@@ -1,0 +1,6 @@
+{
+  "latest_version": "1.2.0",
+  "release_date": "2026-10-16",
+  "download_url": "https://github.com/YOUR_GITHUB_USERNAME/LibreLlama-Reviewer/releases/download/v1.2.0/LibreLlamaReviewer_Setup_v1.2.exe",
+  "changelog": "【v1.2.0 重大更新紀錄 ─ LibreLlama Reviewer 正式發布】\n1. 專案正式定名為【LibreLlama Reviewer】\n2. 支援獨立解安裝功能與 Windows 應用程式註冊\n3. 支援線上檢查更新與一鍵自動升級機制\n4. 實質審稿建議中英雙語對照呈現 (Evidence Gap, Concrete Proposal, Defense Impact)\n5. 沉浸式暗黑模式全面升級，原始草稿高對比純白字優化\n6. 雙模推論引擎：本機 Ollama 離線推論 + 線上旗艦 API (DeepSeek, GPT-4o, Gemini, Groq)\n7. 內建本機環境精靈：Ollama 服務自動檢測、官方安裝檔下載與學術模型一鍵拉取"
+}
