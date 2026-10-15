@@ -21,7 +21,11 @@ import ollama
 import httpx
 import json_repair
 
-APP_VERSION = "0.9.2"
+from academic_nlp_pipeline import (
+    AcademicNLPPipeline, DiagnosticItem, AutoSanitizeChange, PipelineResult
+)
+
+APP_VERSION = "0.9.3"
 DEFAULT_UPDATE_URL = "version.json"
 CONFIG_FILE = "app_config.json"
 
@@ -32,7 +36,7 @@ I18N = {
     "zh_TW": {
         "app_title": "LibreLlama Reviewer ─ 多情境寫作審查與改寫工作台",
         "toolbar_title": "🦙 LibreLlama Reviewer",
-        "pre_release_badge": "v0.9.2 封閉開發版",
+        "pre_release_badge": "v0.9.3 封閉開發版",
         "engine_ollama": "🖥️ 在地 Ollama (100% 離線隱私)",
         "engine_api": "☁️ 線上 API (DeepSeek/OpenAI/Gemini)",
         "api_settings": "⚙️ API 設定",
@@ -111,7 +115,7 @@ I18N = {
     "en_US": {
         "app_title": "LibreLlama Reviewer ─ Multi-Context Writing & Review Workbench",
         "toolbar_title": "🦙 LibreLlama Reviewer",
-        "pre_release_badge": "v0.9.2 Pre-release",
+        "pre_release_badge": "v0.9.3 Pre-release",
         "engine_ollama": "🖥️ Local Ollama (100% Offline Privacy)",
         "engine_api": "☁️ Cloud API (DeepSeek/OpenAI/Gemini)",
         "api_settings": "⚙️ API Settings",
@@ -318,12 +322,15 @@ def save_config(cfg: dict):
 # 1. 本機即時前置檢查器 (適配各寫作模式與搭配詞)
 # ==========================================
 class PreflightMatch:
-    def __init__(self, category: str, original: str, replacement: str, explanation: str, span: Tuple[int, int]):
+    def __init__(self, category: str, original: str, replacement: str, explanation: str,
+                 span: Tuple[int, int], rule_id: str = "", severity: str = "Major"):
         self.category = category
         self.original = original
         self.replacement = replacement
         self.explanation = explanation
         self.span = span
+        self.rule_id = rule_id
+        self.severity = severity
 
 class PreflightChecker:
     CONTRACTIONS = {
@@ -378,41 +385,75 @@ class PreflightChecker:
     }
 
     @classmethod
-    def scan(cls, text: str, mode: str = "academic") -> List[PreflightMatch]:
+    def scan(cls, text: str, mode: str = "academic", is_en: bool = False) -> List[PreflightMatch]:
         matches: List[PreflightMatch] = []
         if not text:
             return matches
 
-        # 縮寫檢測
+        # 1. 縮寫檢測
         for pat, (rep, exp) in cls.CONTRACTIONS.items():
             for m in re.finditer(pat, text, re.IGNORECASE):
-                matches.append(PreflightMatch("縮寫禁忌", m.group(0), rep, exp, (m.start(), m.end())))
+                cat = "Contraction" if is_en else "縮寫禁忌"
+                expl = "Avoid contractions in formal writing" if is_en else exp
+                matches.append(PreflightMatch(cat, m.group(0), rep, expl, (m.start(), m.end()), "RULE_CONTRACTION", "Major"))
 
-        # 口語檢測
+        # 2. 口語檢測
         for pat, (rep, exp) in cls.INFORMAL_WORDS.items():
             for m in re.finditer(pat, text, re.IGNORECASE):
-                matches.append(PreflightMatch("非正式口語", m.group(0), rep, exp, (m.start(), m.end())))
+                cat = "Informal Word" if is_en else "非正式口語"
+                expl = "Use formal academic precision" if is_en else exp
+                matches.append(PreflightMatch(cat, m.group(0), rep, expl, (m.start(), m.end()), "RULE_INFORMAL_WORD", "Minor"))
 
-        # 生硬搭配詞檢測
+        # 3. 生硬搭配詞檢測
         for pat, (rep, exp) in cls.AWKWARD_COLLOCATIONS.items():
             for m in re.finditer(pat, text, re.IGNORECASE):
-                matches.append(PreflightMatch("搭配詞缺陷", m.group(0), rep, exp, (m.start(), m.end())))
+                cat = "Awkward Collocation" if is_en else "搭配詞缺陷"
+                expl = "Unidiomatic collocation in English" if is_en else exp
+                matches.append(PreflightMatch(cat, m.group(0), rep, exp, (m.start(), m.end()), "RULE_AWKWARD_COLLOCATION", "Major"))
 
-        # 過度斷言檢測
+        # 4. 過度斷言檢測
         for pat, (rep, exp) in cls.OVERCLAIMING_PATTERNS.items():
             for m in re.finditer(pat, text, re.IGNORECASE):
-                matches.append(PreflightMatch("過度宣稱預警", m.group(0), rep, exp, (m.start(), m.end())))
+                cat = "Overclaiming" if is_en else "過度宣稱預警"
+                expl = "Avoid absolute dogmatic claims" if is_en else exp
+                matches.append(PreflightMatch(cat, m.group(0), rep, exp, (m.start(), m.end()), "RULE_OVERCLAIMING", "Minor"))
+
+        # 5. spaCy + Regex NLP Pipeline 深入規則診斷 (零 LLM 依賴)
+        try:
+            pipeline_diagnostics = AcademicNLPPipeline.diagnose(text)
+            for d in pipeline_diagnostics:
+                cat = d.category if is_en else d.category_zh
+                expl = d.suggestion if is_en else f"{d.message} | {d.suggestion}"
+                matches.append(PreflightMatch(
+                    category=cat,
+                    original=d.matched_text,
+                    replacement=d.replacement,
+                    explanation=expl,
+                    span=d.span,
+                    rule_id=d.rule_id,
+                    severity=d.severity
+                ))
+        except Exception:
+            pass
 
         return matches
 
     @classmethod
     def fix_all_issues(cls, text: str) -> str:
-        res = text
+        # Step 1: spaCy/Regex Auto-Sanitize (確定性科學單位空格 + 及物動詞多餘介系詞移除)
+        sanitized, _ = AcademicNLPPipeline.auto_sanitize(text)
+        res = sanitized
+
+        # Step 2: 縮寫自動展開
         for pat, (rep, _) in cls.CONTRACTIONS.items():
             res = re.sub(pat, rep, res, flags=re.IGNORECASE)
+
+        # Step 3: 常見搭配詞自動校正
         for pat, (rep, _) in cls.AWKWARD_COLLOCATIONS.items():
             first_rep = rep.split('/')[0].strip()
             res = re.sub(pat, first_rep, res, flags=re.IGNORECASE)
+
+        # Step 4: 口語詞直接替換
         direct_reps = {
             r"\ba lot of\b": "a substantial number of",
             r"\blots of\b": "numerous",
@@ -422,6 +463,7 @@ class PreflightChecker:
         }
         for pat, rep in direct_reps.items():
             res = re.sub(pat, rep, res, flags=re.IGNORECASE)
+
         return res
 
 # ==========================================
@@ -2900,22 +2942,22 @@ class AcademicReviewerApp(QMainWindow):
                 self.update_legend_text()
             return
 
-        self.current_preflight_matches = PreflightChecker.scan(text, self.writing_mode)
+        self.current_preflight_matches = PreflightChecker.scan(text, self.writing_mode, is_en=is_en)
 
         # 當尚未執行 LLM 審查時，直接將本機規則快篩結果呈現在「修改後全文」中 (以刪除號與推薦替換詞標記)
         if self.current_report is None:
             self.render_preflight_diff_in_revised(text)
 
         if not self.current_preflight_matches:
-            self.status_banner.setText("✨ No obvious contractions or awkward collocations detected." if is_en else "✨ 語法規則檢測通過！未發現縮寫、口語贅詞或生硬搭配詞。")
+            self.status_banner.setText("✨ No obvious contractions, grammar violations, or awkward collocations detected." if is_en else "✨ 語法規則檢測通過！未發現縮寫、主謂矛盾、連詞重複、贅詞或生硬搭配詞。")
             self.status_banner.setStyleSheet("color: #10b981; font-size: 11px;")
             self.quick_fix_btn.setEnabled(False)
         else:
             cnt = len(self.current_preflight_matches)
-            preview = ", ".join([f"'{m.original}' ➔ '{m.replacement.split('/')[0].strip()}'" for m in self.current_preflight_matches[:3]])
+            preview = ", ".join([f"'{m.original}' ➔ '{m.replacement.split('/')[0].strip() if m.replacement else m.category}'" for m in self.current_preflight_matches[:3]])
             if cnt > 3:
                 preview += f"... (+{cnt - 3} more)"
-            msg = f"⚠️ Preflight linter found {cnt} issues (marked with strikethrough in Revised Text): {preview}" if is_en else f"⚠️ 本機秒篩偵測到 {cnt} 處待改進項（已於修改後全文標記刪除號與替換詞）：{preview}"
+            msg = f"⚠️ Preflight NLP linter found {cnt} issues (marked with strikethrough in Revised Text): {preview}" if is_en else f"⚠️ 本機規則檢驗偵測到 {cnt} 處待改進項（已於修改後全文標記刪除號與替換詞）：{preview}"
             self.status_banner.setText(msg)
             self.status_banner.setStyleSheet("color: #f59e0b; font-size: 11px;")
             self.quick_fix_btn.setEnabled(True)
@@ -2949,14 +2991,24 @@ class AcademicReviewerApp(QMainWindow):
                 del_style = "color: #dc2626; background-color: #fee2e2; text-decoration: line-through; padding: 1px 4px; border-radius: 3px; font-weight: bold;"
                 ins_style = "color: #15803d; background-color: #dcfce7; font-weight: bold; padding: 1px 4px; border-radius: 3px; margin-left: 2px;"
 
-            first_rep = m.replacement.split('/')[0].strip() if '/' in m.replacement else m.replacement
+            first_rep = m.replacement.split('/')[0].strip() if ('/' in m.replacement) else m.replacement
             tip = f"{m.category}: {m.explanation}"
-            chunk = (
-                f"<span title='{html.escape(tip)}'>"
-                f"<del style='{del_style}'>{html.escape(m.original)}</del>"
-                f"<span style='{ins_style}'> ➔ {html.escape(first_rep)}</span>"
-                f"</span>"
-            )
+            if first_rep:
+                chunk = (
+                    f"<span title='{html.escape(tip)}'>"
+                    f"<del style='{del_style}'>{html.escape(m.original)}</del>"
+                    f"<span style='{ins_style}'> ➔ {html.escape(first_rep)}</span>"
+                    f"</span>"
+                )
+            else:
+                flag_style = "color: #38bdf8; text-decoration: underline wavy #38bdf8; font-weight: 500;" if self.is_dark_mode else "color: #0284c7; text-decoration: underline wavy #0284c7; font-weight: 500;"
+                badge_style = "color: #38bdf8; background-color: #0c4a6e; font-size: 11px; padding: 1px 4px; border-radius: 3px; margin-left: 2px;" if self.is_dark_mode else "color: #0369a1; background-color: #e0f2fe; font-size: 11px; padding: 1px 4px; border-radius: 3px; margin-left: 2px;"
+                chunk = (
+                    f"<span title='{html.escape(tip)}' style='{flag_style}'>"
+                    f"{html.escape(m.original)}"
+                    f"<span style='{badge_style}'>[{html.escape(m.category)}]</span>"
+                    f"</span>"
+                )
             html_parts.append(chunk)
             curr_pos = e
 
@@ -2976,7 +3028,7 @@ class AcademicReviewerApp(QMainWindow):
         self.text_editor.setPlainText(fixed_text)
         self.run_preflight_analysis()
         is_en = (self.ui_language == "en_US")
-        msg = "Fixed contractions and informal words automatically!" if is_en else "已一鍵完成縮寫與口語詞自動替換！"
+        msg = "Auto-sanitized units, prepositions, contractions & collocations!" if is_en else "已透過 NLP 規則管線完成單位空格、介系詞、縮寫與搭配詞自動修正！"
         self.status_banner.setText(msg)
         self.status_banner.setStyleSheet("color: #10b981; font-weight: bold; font-size: 11px;")
 
@@ -2988,6 +3040,12 @@ class AcademicReviewerApp(QMainWindow):
         if not text:
             QMessageBox.warning(self, "Notice" if is_en else "提示", "Please enter text to review." if is_en else "請輸入欲審查的文章。")
             return
+
+        # Pipeline Step 1: Auto-Sanitize (零 LLM 依賴，確定性自動無損格式與及物動詞介系詞修正)
+        sanitized_text, sanitize_changes = AcademicNLPPipeline.auto_sanitize(text)
+        if sanitize_changes:
+            self.text_editor.setPlainText(sanitized_text)
+            text = sanitized_text
 
         model_name = self.model_combo.currentText().strip()
         if self.engine_mode == "ollama":

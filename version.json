@@ -1,6 +1,6 @@
 {
-  "latest_version": "0.9.2",
+  "latest_version": "0.9.3",
   "release_date": "2026-10-16",
-  "download_url": "https://github.com/Chars1008/LibreLlama-Reviewer/releases/download/v0.9.2/LibreLlamaReviewer_Setup_v0.9.2.exe",
-  "changelog": "【v0.9.2 更新紀錄 ─ 封閉開發版 (Closed Development Pre-release)】\n1. 英文審查意見與實證建議完整修復：重構後端容錯解析與提示詞約束，保證 Reviewer Comment (EN) 與實證建議 (US EN) 具備 100% 專業道地英文評語，杜絕空白框與中文混雜\n2. 欄位標題精煉去雜訊：全面移除各欄位標題之編號 (1., 2., 3.) 與位置比例標註 ((上部 1/2) 等)，視覺更顯簡潔專業\n3. 全新底部操作工具列 (Bottom Action Toolbar)：將「開始智能審查」、「一鍵快修」、狀態即時監控與進度條整合至視窗底部，大幅釋放草稿與修訂編輯區高度\n4. 修改後全文整合規則快篩：未執行 LLM 審查前，修改後全文區即時以刪除號 (<del>) 與綠色醒目字體對照呈現縮寫及口語待替換詞，一目瞭然"
+  "download_url": "https://github.com/Chars1008/LibreLlama-Reviewer/releases/download/v0.9.3/LibreLlamaReviewer_Setup_v0.9.3.exe",
+  "changelog": "【v0.9.3 更新紀錄 ─ 封閉開發版 (Closed Development Pre-release)】\n1. 零 LLM 依賴之學術 NLP 規則管線 (spaCy + Regex)：打造獨立可插拔模組 academic_nlp_pipeline.py，於送審前執行毫秒級語法與文風分析\n2. 確定性自動無損修正 (Auto-Sanitize)：自動修復科學單位空格 (如 10mL -> 10 mL, 50uM -> 50 uM, 37°C -> 37 °C, 24h -> 24 h) 與及物動詞多餘介系詞 (如 discuss about -> discuss, emphasize on -> emphasize)，於文本送審前自動淨化\n3. 深度結構化語言學規則診斷 (Rule-Based Diagnostics)：精準捕捉跨子句主謂一致性 (SVA)、中式雙重連接詞 (although... but / because... so)、句首裸露指示代名詞 (This/These 直接接動詞)、過度名詞化 (conduct an analysis of -> analyze) 以及被動語態與超過 35 字長句標記，回傳標準 JSON 陣列\n4. 修改後全文預檢雙軌整合：未呼叫模型前即時呈現刪除線與替換詞標記；一鍵自動修復無縫整合 Auto-Sanitize"
 }
