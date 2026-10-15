@@ -1,49 +1,96 @@
-# 🦙 LibreLlama Reviewer (學術英文審查與改寫工作台) v1.2
+# 🦙 LibreLlama Reviewer (多情境寫作審查與改寫工作台) v0.9.0
 
-> **專為國際頂級期刊（Nature, IEEE, Science, ACM, Elsevier 等）投稿學者與學術寫作教師打造的 AI 審查工作台**  
-> **混合雙模架構 ｜ 100% 離線在地 Ollama 隱私保護 ｜ 線上旗艦 API 自由切換 ｜ 審稿實證中英雙語對照 ｜ 獨立安裝與解安裝精靈 ｜ GitHub 線上檢查更新系統**
-
----
-
-## 📌 專案背景與核心理念
-
-學術界在投稿頂級論文（SCI / SSCI / EI / 國際頂會）前，往往高度仰賴語言潤飾工具。然而傳統雲端服務（如 Grammarly, ChatGPT 等）存在三大痛點：
-1. **資料隱私與未發表論文版權洩漏**：未發表原創草稿、專利數據或機密實驗結果上傳至雲端伺服器，具高度資安與版權風險。
-2. **審查流於表面且不徹底**：一般工具或預設 LLM 往往「點到為止」，一段 200 字草稿僅抓出 2-3 個表面問題，遺漏了深層的學術用詞精準度與句構缺陷。
-3. **缺乏審稿人層級的「實證與上下文完整度批判」**：傳統工具只能改字改文法，無法指出「實驗設計缺少了什麼」、「統計顯著性缺少了什麼」、「如何補做實驗才能防禦 Reviewer #2 的質疑」。
-
-**LibreLlama Reviewer** 透過 **Python + PySide6** 現代桌面 GUI 框架，打造出支援 **本地 Ollama 離線模型** 與 **線上旗艦 API 資源（DeepSeek, OpenAI, Gemini, Groq 等）** 的雙核驅動學術編輯工作台，兼顧機密資料隱私與頂級同儕評審（Peer Review）深度。
+> **⚠️ 封閉開發階段 (Closed Development / Pre-release) ｜ 正式公開發布時定為 ver 1.0**  
+> **多語系介面切換 (繁體中文 / Pure English) ｜ 四大情境寫作模式 ｜ 文章範圍與章節定位 ｜ 道地搭配詞與 3~4 種多樣選項 ｜ 100% 離線隱私或線上旗艦 API**
 
 ---
 
-## 🚀 系統架構與重大技術特點
+## 📌 專案背景與封閉開發目標
+
+在國際論文發表、海外留學申請、重要商務談判與高階學術通訊中，高品質的英文書寫是決定成敗的關鍵門檻。
+多數寫作者常面臨以下核心困境：
+1. **未公開資料的極致隱私保護**：原創草稿、專利數據、未發表論文上傳至第三方雲端有洩漏風險。
+2. **缺乏情境適配性**：市面工具多半「一套標準套用所有文體」，無法區分學術期刊論文（嚴謹謙抑）、商務書信（得體外交）、求學自述 SOP（量化成就動詞）與商務決策報告（金字塔結構）。
+3. **生硬的搭配詞（Awkward Collocations）**：字詞單看文法正確，但母語人士絕不這樣搭配（例如 *make an experiment*、*statistically big difference*），且一般工具僅提供單一死板改法，缺乏多樣語感選擇。
+4. **片面段落被斷章取義**：使用者往往只修改論文其中一節（如僅修 Methodology 或僅修 Introduction），一般 LLM 常誤判「缺乏結論」或「缺少背景」。
+
+**LibreLlama Reviewer** 於 **v0.9.0 封閉開發版** 針對上述問題進行了全方位重構與升級，為即將到來的 **v1.0 正式公開發布** 奠定扎實架構！
+
+---
+
+## 🚀 v0.9.0 五大核心新功能
+
+### 1. 🌐 多語系操作切換（支援純英文 Pure English 模式）
+- 工具列提供 **「🌐 English / 繁體中文」** 一鍵切換。
+- **純英文模式 (Pure English Mode)**：
+  - 界面全面切換為專業英文，**完全隱藏並杜絕任何正體中文註解**。
+  - 後端推論 Prompt 自動注入純英文強制指令，LLM 產出的主旨解析、評語批判、補強策略、修改理由皆保證 100% 正統專業英文。
+- **正體中文模式**：保有優質繁體中文文意分析與中英雙語對照呈現，利於華人學者撰寫 Rebuttal Letter。
+
+### 2. 📝 四大情境寫作模式 (Multi-Context Writing Profiles)
+支援頂部控制列一鍵切換不同寫作情境，推論引擎將自動切換專家角色（Persona）與評判維度：
+1. **🔬 學術期刊論文 (Academic Research Paper)**：
+   - 角色：頂級國際期刊 Reviewer #2 與資深學術編輯。
+   - 焦點：消融實驗、顯著性檢定、因果推論、學術謙抑詞（Hedging）、杜絕過度斷言。
+2. **✉️ 專業書信往來 (Professional Correspondence / Email)**：
+   - 角色：高級學術聯絡官與商務通訊專家。
+   - 焦點：外交級語氣（Diplomatic tone）、溝通得體性、明確的行動呼籲（Call to Action）。
+3. **🎓 留學與求職自述 (Statement of Purpose / Cover Letter)**：
+   - 角色：常春藤名校審查委員與高階獵頭合夥人。
+   - 焦點：量化成就強動詞（Action verbs）、故事脈絡（Hook）、個人亮點與目標系所契合度。
+4. **💼 商務決策報告 (Business & Analytical Report)**：
+   - 角色：麥肯錫（McKinsey）高級戰略諮詢顧問。
+   - 焦點：金字塔原則（Pyramid Principle）、數據洞察支撐、執行可行性與 ROI 決策論述。
+
+### 3. 📑 文章範圍與章節針對性定位 (Scope & Section Targeting)
+- **範圍選擇**：
+  - 📄 **全篇完整文章 (Full Document)**：評估全文結構流暢度、起承轉合與邏輯閉環。
+  - 📑 **局部段落選取 (Partial Excerpt)**：專注評審特定篇章。
+- **動態章節定位**：
+  - 切換為局部段落時，章節選單自動依寫作情境調整（如學術模式提供 Abstract / Introduction / Methodology / Results / Discussion / Conclusion 等）。
+  - LLM 獲得明確的局部章節定位資訊，**絕不因缺少其他章節內容而誤判或扣分**，專注於該章節的黃金標準！
+
+### 4. 🟢 道地搭配詞檢視與 3~4 種多樣風格選項 (Collocations & Multi-Options)
+- 新增 **「🟢 道地搭配詞 (Collocation Defect)」** 一級問題分類，專門揪出不自然、生硬的詞語搭配。
+- **3 至 4 個不同語感改寫選項**：
+  - **選項 A**：標準規範／高頻道地搭配 (Standard / High-Frequency Native Phrasing)
+  - **選項 B**：簡練高能／行動導向 (High-Impact Concise / Action-Oriented)
+  - **選項 C**：學術謙抑／謹慎精確 (Cautious & Hedged / Nuanced)
+  - **選項 D**：權威正式／書面典雅 (Authoritative / Formal Register)
+- 點選任何選項，右欄修訂全文即時連動並精準高亮，給予寫作者充分的詞彙主控權！
+
+### 5. ⚡ 本機秒篩 Linter 與高對比暗黑模式
+- **本機秒篩 (0.001s)**：即時攔截常見縮寫、口語贅詞與生硬搭配詞，支援一鍵秒級修復。
+- **高對比暗黑模式**：左側草稿文字純白（`#ffffff`），夜間寫作極度抗疲勞；五色彩色高亮標記（🔴文法 🟠推論 🟡邏輯 🔵修辭 🟢搭配詞）清晰分明。
+
+---
+
+## 🛠️ 架構總覽
 
 ```
 +-----------------------------------------------------------------------------------+
 |                        🦙 LibreLlama Reviewer (三欄式專業工作台)                    |
+|  [控制列] 寫作情境模式 (4大類) ｜ 文章範圍 (全篇/局部) ｜ 章節定位 ｜ 語言切換 (中/EN)  |
 +--------------------------+------------------------------+-------------------------+
-|     【左欄：原始草稿】     |    【中欄：審稿評析與選項】   |   【右欄：修訂後全文】   |
+|     【左欄：原始草稿】     |    【中欄：審查意見與選項】   |   【右欄：修訂後全文】   |
 |                          |                              |                         |
-|  • 輸入學術英文段落      |  • 全文主旨判斷 (正體中文)   |  • 確定性合成引擎       |
-|  • 暗黑模式高對比純白字  |  • 🔬 審稿人實證補強建議     |  • 100% 準確彩色高亮:   |
-|  • 字數即時統計          |    (中英雙語對照呈現)        |     🔴 文法與句構       |
+|  • 輸入各情境英文段落    |  • 全文主旨判斷與情境總評    |  • 確定性動態合成引擎   |
+|  • 暗黑純白高對比輸入    |  • 🔬 實證/策略補強建議      |  • 5 色高亮即時響應:    |
+|  • 即時字數統計          |    (中英雙語或純英文)        |     🔴 文法與句構       |
 |                          |                              |     🟠 推論缺陷         |
 |  [⚡ 本機秒篩 Linter]    |  • ✍️ 逐句穿透式窮舉審查     |     🟡 邏輯矛盾         |
-|  • 縮寫/口語/宣稱預警    |    (深度挖掘 6~10 處改寫點)  |     🔵 修辭風格         |
-|  • 一鍵 0.001 秒秒級修正 |  • 多風格改寫 (Hedged/       |  • 隨選項即時動態連動   |
-|                          |    Concise/Assertive)        |                         |
+|  • 縮寫/口語/搭配詞預警  |  • 🟢 道地搭配詞分析         |     🔵 修辭風格         |
+|  • 一鍵 0.001 秒秒級修正 |  • 3~4 種多風格改寫選項      |     🟢 道地搭配詞       |
+|                          |    (Option A, B, C, D)       |  • 點擊選項即時連動     |
 +--------------------------+------------------------------+-------------------------+
              |                                                         ^
-             | (預處理完成後傳送)                                      | (即時連動)
+             | (傳送情境與章節中繼資料)                                | (即時切換)
              v                                                         |
 +----------------------------------------------------------------------+------------+
 |                          雙模後端引擎 (Dual Hybrid Engine)                         |
 |                                                                                   |
-|  Layer 1: 純 Python 規則庫 (0.001s) ➔ 縮寫、口語詞、超長句、基礎啟發式快篩         |
-|                                                                                   |
-|  Layer 2: 雙模推論引擎 (支援 QThread 即時 Token 串流 + 智慧 JSON 修復)            |
-|           ├── 模式 A：在地 Ollama (100% 離線私隱，內建環境與模型管理精靈)          |
-|           └── 模式 B：線上 OpenAI 相容 API (DeepSeek, GPT-4o, Gemini, Groq)       |
+|  • 模式 A：在地 Ollama (100% 離線私隱，內建環境與模型管理精靈)                      |
+|  • 模式 B：線上 OpenAI 相容 API (DeepSeek, GPT-4o, Gemini, Groq)                   |
 +-----------------------------------------------------------------------------------+
 |                         生命週期與維護管理 (Lifecycle & Maintenance)              |
 |  • 獨立安裝精靈 (Setup.exe) ➔ 自動建立桌面/開始功能表捷徑與環境檢查               |
@@ -52,132 +99,35 @@
 +-----------------------------------------------------------------------------------+
 ```
 
-### 1. 審稿人實質建議「中英雙語對照」（Bilingual Peer-Review Insights）
-全新實質建議架構均以**繁體中文／英文雙語平鋪對照**：
-- **實證與論述缺陷分析**（Evidence Gap Identified）
-- **具體補做或補強方案**（Concrete Actionable Proposal，如消融實驗、顯著性檢定、變因排除）
-- **對同儕評審防禦之實質效益**（Peer-Review Defense Impact）
-卡片視覺化分離顯示，點選可直接複製英文精準術語，方便學者撰寫學術反駁信（Rebuttal Letter）或補入論文討論章節（Discussion）。
+---
 
-### 2. 沉浸式暗黑模式與純白高對比輸入（High-Contrast Dark Mode）
-- **左側原始草稿文字全面強制優化為純白高對比（`#ffffff`）**，無論手動輸入、貼上文本或執行一鍵修復，文字均保持極致清晰。
-- 修訂四色高亮標記（🔴文法 🟠推論 🟡邏輯 🔵修辭）全面調色，確保在深色背景下色彩識別度 100%。
+## 📖 版本歷程與發布計畫 (Roadmap)
 
-### 3. 雙模運算：在地 Ollama 離線隱私 ＋ 線上旗艦 LLM API
-- **在地 Ollama 模式**：100% 離線推論，保障論文未發表資料絕對不外洩。
-- **線上 API 模式**：工具列提供「⚙️ API 設定」，支援 DeepSeek, OpenAI (GPT-4o), Google Gemini, Groq, OpenRouter 等。支援 SSE Token 串流顯示。
-
-### 4. 完整的 Windows 軟體生命週期管理
-- **安裝精靈 (`LibreLlamaReviewer_Setup_v1.2.exe`)**：
-  - 單一檔案即開即裝，自動解壓應用程式檔案至本機目錄（免管理員權限）。
-  - 自動在「桌面」與「開始功能表」建立捷徑。
-  - 自動註冊至 Windows **「設定 ➔ 應用程式 ➔ 已安裝的應用程式」**，提供原生軟體管理體驗。
-  - 安裝過程中自動偵測 Ollama，未安裝時可一鍵背景下載官方安裝檔並一鍵拉取學術模型（`llama3.1:8b`）。
-- **獨立解安裝精靈 (`uninstall.exe`)**：
-  - 放置於安裝目錄下，並於開始功能表建立「解除安裝 LibreLlama Reviewer」捷徑。
-  - 使用者在 Windows 設定中點選「解除安裝」時即可自動呼叫。
-  - 具備跳板自解構機制、安全終止進程、清理所有捷徑與目錄、登錄檔乾淨註銷。
-
-### 5. 線上檢查更新機制（Check for Updates）
-- 工具列新增 **「🚀 檢查更新」** 按鈕。
-- 支援 GitHub 倉庫中的 `version.json` 比對版本號。
-- 偵測到新版本時視覺化展示更新日誌（Release Notes），提供 **「📥 立即下載並安裝更新」**。
-- 下載完成後自動啟動新版安裝精靈覆蓋更新，並完整保留原有的個人設定（`app_config.json`）。
+- **v0.9.0 (當前版本 ─ 封閉開發版 Closed Development Pre-release)**：
+  - 專案正式命名為 LibreLlama Reviewer。
+  - 新增多語系介面（繁體中文 / Pure English）。
+  - 新增四大情境寫作模式（學術、書信、留學求職、商務報告）。
+  - 新增文章範圍（Full Text / Partial Excerpt）與章節針對性定位。
+  - 新增道地搭配詞檢視（Collocation Defect）與 3~4 種改寫選項。
+  - Windows 原生安裝、解安裝與線上更新機制就緒。
+- **v1.0.0 (預計公開發布版本 Official Release)**：
+  - 完成社群封測反饋修復。
+  - 支援全文 PDF / LaTeX / DOCX 匯入與導出。
+  - 擴充更多專業領域 Prompt 知識庫。
 
 ---
 
-## 🛠️ 功能特點總覽
+## 📦 使用與啟動方式
 
-| 功能模組 | 技術實現 | 適用場景 |
-| :--- | :--- | :--- |
-| **獨立安裝導引** | `LibreLlamaReviewer_Setup_v1.2.exe` | 朋友同事免學 Python 與命令列，雙擊即可自動安裝並配置 Ollama |
-| **獨立解安裝精靈** | `uninstall.exe` + Windows Registry | 支援從 Windows「已安裝的應用程式」或開始功能表乾淨移除 |
-| **線上檢查更新系統** | `UpdateDialog` + GitHub Releases | 隨時檢查最新版本、檢視更新日誌，一鍵背景下載與自動覆蓋升級 |
-| **本機環境與模型精靈** | 視覺化模型庫 + Ollama 串流拉取 | 一鍵檢測服務狀態，直接點擊下載 `llama3.1:8b` 或 `qwen2.5:14b` |
-| **中英對照實質建議** | 雙語 Schema + 實證缺失因果推理 | 具體指出需補做的**消融實驗、顯著性檢定、變因排除方案**，中英對照便於寫入 Rebuttal |
-| **窮舉式逐句審查** | 頂刊 Reviewer #2 極限 Prompt | 深入挖掘 6~10 處改寫點，涵蓋學術謙抑、精確性與句構 |
-| **線上/離線雙模運算** | Ollama + OpenAI 相容 API (httpx SSE) | 本機離線保護極限隱私；或一鍵切換雲端 DeepSeek/GPT-4o 享受旗艦推論力 |
-| **高對比暗黑/明亮主題** | 現代 Slate/Zinc 主題引擎 | 原始草稿純白高對比，長時間夜間寫作抗疲勞 |
-
----
-
-## 🌐 GitHub 專案建立與發布維護指引
-
-本專案已做好開源與團隊維護準備。以下為發布至 GitHub 與日後推播更新的標準流程：
-
-### 1. 於 GitHub 建立新倉庫
-1. 登入 [GitHub](https://github.com/) 並點擊右上角的 **New repository**。
-2. 倉庫名稱建議命名為：`LibreLlama-Reviewer`。
-3. 設為 **Public**（公開）或 **Private**（私人）。
-4. **不要**勾選 "Initialize this repository with a README"（本機已有完整檔案）。
-5. 點擊 **Create repository**。
-
-### 2. 連接遠端倉庫並推送代碼
-在專案根目錄開啟 PowerShell 執行：
-```powershell
-# 設定使用者識別 (若尚未設定)
-git config --global user.name "Your Name"
-git config --global user.email "your_email@example.com"
-
-# 關聯遠端倉庫 (請將 USERNAME 換成您的 GitHub 帳號)
-git remote add origin https://github.com/USERNAME/LibreLlama-Reviewer.git
-
-# 推送至 main 分支
-git branch -M main
-git push -u origin main
-```
-
-### 3. 發布 Release 與配置自動更新 (`version.json`)
-當您打包出新版安裝檔（如 `LibreLlamaReviewer_Setup_v1.2.exe`）後：
-1. 進入 GitHub 專案頁面右側的 **Releases** ➔ **Draft a new release**。
-2. Tag 標籤填寫 `v1.2.0`，Title 填寫 `LibreLlama Reviewer v1.2.0`。
-3. 將編譯出的 `LibreLlamaReviewer_Setup_v1.2.exe` 拖曳上傳至 **Attach binaries** 區域。
-4. 點擊 **Publish release** 發布。
-5. 更新專案中的 `version.json` 內的 `download_url` 為該 Release 附件的直接下載鏈結，並將 `version.json` push 至 GitHub：
-   ```json
-   {
-     "latest_version": "1.2.0",
-     "release_date": "2026-10-16",
-     "download_url": "https://github.com/USERNAME/LibreLlama-Reviewer/releases/download/v1.2.0/LibreLlamaReviewer_Setup_v1.2.exe",
-     "changelog": "【v1.2.0 更新】..."
-   }
+1. **直接免安裝執行**：雙擊專案目錄下的 [啟動LibreLlama.bat](file:///c:/Users/Chars%20Hsieh/Desktop/Editor%20project/啟動LibreLlama.bat)。
+2. **開發除錯執行**：
+   ```powershell
+   python academic_reviewer_app.py
    ```
-6. 使用者在軟體內點擊「🚀 檢查更新」時，軟體便會直接從該 URL 下載最新安裝檔並自動覆蓋更新！
-
----
-
-## 📦 發行與分發給同仁的方法
-
-### 方法 A：使用獨立安裝檔（推薦給朋友與同事）
-直接傳送根目錄下的 [LibreLlamaReviewer_Setup_v1.2.exe](file:///c:/Users/Chars%20Hsieh/Desktop/Editor%20project/LibreLlamaReviewer_Setup_v1.2.exe)（單一可執行檔）：
-1. 雙擊執行 `LibreLlamaReviewer_Setup_v1.2.exe`。
-2. 依照安裝精靈引導完成解壓、註冊與捷徑建立。
-3. 精靈會自動檢查 Ollama，若尚未安裝可一鍵下載官方安裝檔並一鍵拉取模型。
-4. 安裝完成後勾選「立即啟動 LibreLlama Reviewer」即可開始使用！
-5. 日後若欲移除，可直接在 Windows「設定 ➔ 應用程式」點擊解除安裝，或從開始功能表點選「解除安裝 LibreLlama Reviewer」。
-
-### 方法 B：免安裝綠色版（直接執行）
-雙擊專案目錄下的 [啟動LibreLlama.bat](file:///c:/Users/Chars%20Hsieh/Desktop/Editor%20project/啟動LibreLlama.bat)，直接呼叫主程式開啟。
-
----
-
-## 📖 專案檔案結構
-
-```
-Editor project/
-│
-├── LibreLlamaReviewer_Setup_v1.2.exe # ★ 獨立一鍵安裝檔 (內含完整程式、解安裝程式與模型引導)
-├── academic_reviewer_app.py          # 主應用程式原始碼 (GUI、雙模推論、中英對照、環境精靈、更新檢查)
-├── installer.py                      # 安裝精靈原始碼 (含 Windows Add/Remove 註冊)
-├── uninstall.py                      # 解安裝程式原始碼 (清理目錄、捷徑與登錄檔)
-├── version.json                      # 版本發布與更新日誌中繼資料
-├── 啟動LibreLlama.bat                # 雙擊一鍵免安裝啟動
-├── README.md                         # 專案技術架構與完整說明書
-├── .gitignore                        # Git 忽略設定 (排除大型二進位檔與個人組態)
-├── app_config.json                   # 使用者個人偏好設定檔 (暗黑模式狀態、API 設定)
-└── dist/                             # 打包發行目錄
-    ├── LibreLlamaReviewer/           # 綠色獨立執行檔目錄
-    │   ├── LibreLlamaReviewer.exe    # 主程式執行檔
-    │   └── uninstall.exe             # 獨立解安裝程式
-    └── LibreLlamaReviewer_Setup_v1.2.exe # 單一安裝精靈執行檔
-```
+3. **打包獨立安裝精靈**：
+   ```powershell
+   pyinstaller --noconfirm --onedir --windowed --name "LibreLlamaReviewer" academic_reviewer_app.py
+   pyinstaller --noconfirm --onefile --windowed --name "uninstall" uninstall.py
+   # 複製 uninstall.exe 至 dist/LibreLlamaReviewer 後打包為 app_bundle.zip
+   pyinstaller --noconfirm --onefile --windowed --name "LibreLlamaReviewer_Setup_v0.9" --add-data "app_bundle.zip;." installer.py
+   ```
