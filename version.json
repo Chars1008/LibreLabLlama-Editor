@@ -2,5 +2,5 @@
   "latest_version": "0.9.1",
   "release_date": "2026-10-16",
   "download_url": "https://github.com/Chars1008/LibreLlama-Reviewer/releases/download/v0.9.1/LibreLlamaReviewer_Setup_v0.9.1.exe",
-  "changelog": "【v0.9.1 更新紀錄 ─ 封閉開發版 (Closed Development Pre-release)】\n1. 介面極致優化：寫作情境、文章範圍、章節定位與頂部按鈕整合為 70px 緊湊頂部工具列，釋放 90%+ 視窗空間給三欄主工作區\n2. 確立語意化版號（Semantic Versioning）演進藍圖：梳理自對話初期至今 v0.1.0 至 v0.9.1 之 10 大里程碑，杜絕公開前版號混淆\n3. 奠定生物醫學跨段落邏輯斷層掃描、Git-Diff 雙向對照與專有名詞一致性檢驗之技術規範與架構基礎"
+  "changelog": "【v0.9.1 更新紀錄 ─ 封閉開發版 (Closed Development Pre-release)】\n1. 錯誤雙軌不互斥檢核：重構 Prompt 與 Schema 為雙軌陣列，徹底解決同一句子中搭配詞與文法句構/邏輯矛盾互相掩蓋的問題\n2. 實證補強分析修復：放寬 Pydantic severity 容錯機制，恢復審查員上下文缺失分析 (Evidence Gap) 與建議補做方案 (Proposed Protocol)\n3. 全新三欄 1/3 佈局：左側 1/3 (原始草稿 + 修改後全文)、中間 1/3 (實質建議上部 1/2 + 搭配詞下部 1/2)、右側 1/3 (語篇句構與邏輯缺陷全高)\n4. 章節定位彈性擴充：新增「🔍 其他 / 由模型判斷 (Auto-Detect)」模式，局部文章段落由模型自適應判斷"
 }

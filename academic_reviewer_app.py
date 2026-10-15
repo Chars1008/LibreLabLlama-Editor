@@ -59,7 +59,8 @@ I18N = {
         "section_lbl": "章節定位:",
         "load_sample": "📋 載入情境範文",
 
-        # 左欄
+        # 左欄 (1/3)
+        "draft_title": "1. 原始英文草稿:",
         "left_title": "1. 原始英文草稿:",
         "word_count": "字數: {n} 字",
         "pf_title": "⚡ 本機秒篩 (純程式規則，0秒反應):",
@@ -68,19 +69,26 @@ I18N = {
         "status_ready": "就緒：請確認輸入文本並點擊開始審查。",
         "btn_start_review": "🚀 開始智能審查 (搭配詞檢視與深度改寫)",
         "btn_reviewing": "正在進行深度情境批判與搭配詞窮舉審查...",
+        "revised_title": "2. 修改後全文 (高亮顏色標記修改處):",
+        "sync_left": "⬆️ 同步至草稿",
+        "copy_revised": "📋 複製修訂全文",
+        "revised_placeholder": "<span style='color: #64748b;'>審查完成後，此處將呈現綜合修訂後的完整英文文章，並以不同底色清晰標示出修改位置。<br><br>在右側切換不同選項，此處將即時切換並更新高亮文字！</span>",
 
-        # 中欄
-        "middle_title": "2. 審查意見、實證補強與搭配詞選項:",
+        # 中欄 (1/3)
+        "middle_title": "審查實質建議與搭配詞替換:",
+        "recs_title": "3. 審查實質建議與實證缺失分析 (上部 1/2):",
+        "colloc_title": "4. 搭配詞替換選項與精準用詞編修 (下部 1/2):",
         "assessment_placeholder": "<span style='color: #64748b;'>點擊左側「開始智能審查」後，此處將顯示：<br>• 即時生成狀態、累計耗時與 Token 數<br>• 全文主旨解析與情境綜合評述</span>",
         "gist_title": "📖 全文主旨判斷與解析 (正體中文)：",
         "overall_zh_title": "🇹🇼 綜合就緒度評估：",
         "overall_en_title": "🇺🇸 Overall Assessment：",
+        "recs_placeholder_text": "🔬 審查完成後，將在此呈現論文上下文缺失、實驗補強與研究方法改進建議 (Evidence Gap & Proposed Protocol)。",
+        "colloc_placeholder_text": "🟢 審查完成後，將在此列出道地搭配詞替換選項 (Collocations) 與精準用詞修訂。",
 
-        # 右欄
-        "right_title": "3. 修改後全文 (高亮顏色標記修改處):",
-        "sync_left": "⬅️ 同步至左側草稿",
-        "copy_revised": "📋 複製修訂全文",
-        "revised_placeholder": "<span style='color: #64748b;'>審查完成後，此處將呈現綜合修訂後的完整英文文章，並以不同底色清晰標示出修改位置。<br><br>在中欄點選不同選項，此處將即時切換並更新高亮文字！</span>",
+        # 右欄 (1/3)
+        "right_title": "文法句構、推論缺陷、修辭風格與邏輯矛盾:",
+        "discourse_title": "5. 文法句構、推論缺陷、修辭風格與邏輯矛盾 (全高):",
+        "discourse_placeholder_text": "✍️ 審查完成後，將在此列出逐句文法句構、推論缺陷、修辭風格與邏輯矛盾診斷卡片。",
 
         # 圖例 Legend
         "legend_grammar": "🔴 文法與句構",
@@ -130,7 +138,8 @@ I18N = {
         "section_lbl": "Section Target:",
         "load_sample": "📋 Load Sample",
 
-        # Left Column
+        # Left Column (1/3)
+        "draft_title": "1. Original Draft:",
         "left_title": "1. Original Draft:",
         "word_count": "Word Count: {n} words",
         "pf_title": "⚡ Instant Local Linter (Pure Rules, 0.001s):",
@@ -139,19 +148,26 @@ I18N = {
         "status_ready": "Ready: verify input text and click Start Review.",
         "btn_start_review": "🚀 Start Deep Review (Collocations & Multi-Style Revisions)",
         "btn_reviewing": "Performing exhaustive multi-context critique and collocation analysis...",
+        "revised_title": "2. Revised Full Text (Real-time Highlight Matching):",
+        "sync_left": "⬆️ Sync to Draft",
+        "copy_revised": "📋 Copy Revised Text",
+        "revised_placeholder": "<span style='color: #64748b;'>Upon review completion, the fully synthesized text will appear here with color highlights.<br><br>Switching options dynamically updates the text here!</span>",
 
-        # Middle Column
-        "middle_title": "2. Critiques, Strategic Proposals & Collocation Options:",
+        # Middle Column (1/3)
+        "middle_title": "Critiques, Strategic Proposals & Collocations:",
+        "recs_title": "3. Strategic Recommendations & Evidence Gap Analysis (Top 1/2):",
+        "colloc_title": "4. Collocation Options & Lexical Precision (Bottom 1/2):",
         "assessment_placeholder": "<span style='color: #64748b;'>Click 'Start Deep Review' on the left to display:<br>• Real-time token streaming & elapsed time<br>• Executive summary & critical assessment</span>",
         "gist_title": "📖 Executive Summary & Thesis Analysis:",
         "overall_zh_title": "Assessment:",
         "overall_en_title": "Overall Strategic Assessment:",
+        "recs_placeholder_text": "🔬 Strategic recommendations, evidence gap analyses, and proposed protocols will appear here upon review completion.",
+        "colloc_placeholder_text": "🟢 Idiomatic collocation replacement options and lexical precision revisions will appear here.",
 
-        # Right Column
-        "right_title": "3. Revised Full Text (Real-time Highlight Matching):",
-        "sync_left": "⬅️ Sync to Left Draft",
-        "copy_revised": "📋 Copy Revised Text",
-        "revised_placeholder": "<span style='color: #64748b;'>Upon review completion, the fully synthesized text will appear here with color highlights.<br><br>Switching options in the center column dynamically updates the text here!</span>",
+        # Right Column (1/3)
+        "right_title": "Discourse, Logic, Rhetoric & Grammar:",
+        "discourse_title": "5. Discourse, Logic, Rhetoric & Grammar Critiques (Full Height):",
+        "discourse_placeholder_text": "✍️ Sentence-by-sentence grammar diagnostics, deductive flaws, tone, and logic critique cards will appear here.",
 
         # Legend
         "legend_grammar": "🔴 Grammar & Mechanics",
@@ -184,6 +200,7 @@ WRITING_MODES = {
         "persona_zh": "世界頂級期刊（如 Nature, IEEE, Science, ACM）以嚴苛批判著稱的資深同行評審員（Reviewer #2）兼學術英文資深編輯",
         "persona_en": "Senior Peer Reviewer #2 and Principal Academic Editor for top-tier international journals (Nature, IEEE, Science, ACM)",
         "sections": [
+            ("auto", "🔍 其他 / 由模型判斷 (Auto-Detect / Other)", "🔍 Other / Auto-Detect by Model"),
             ("abstract", "標題與摘要 (Title & Abstract)", "Title & Abstract"),
             ("intro", "引言與研究缺口 (Introduction & Research Gap)", "Introduction & Research Gap"),
             ("lit_review", "相關文獻回顧 (Literature Review)", "Literature Review"),
@@ -207,6 +224,7 @@ WRITING_MODES = {
         "persona_zh": "頂級學術機構與跨國企業的高級學術聯絡官兼商務通訊專家，專精高雅得體的語氣、明確的行動呼籲（Call to Action）與外交級溝通策略",
         "persona_en": "Principal Academic Liaison & Executive Communication Specialist, expert in diplomatic tone, professional etiquette, and actionable clarity",
         "sections": [
+            ("auto", "🔍 其他 / 由模型判斷 (Auto-Detect / Other)", "🔍 Other / Auto-Detect by Model"),
             ("salutation", "開場稱謂與問候 (Opening & Salutation)", "Opening & Salutation"),
             ("purpose", "主旨背景與核心訴求 (Context & Purpose)", "Context & Purpose"),
             ("proposal", "具體提議或反駁說明 (Specific Proposal / Inquiries)", "Specific Proposal / Inquiries"),
@@ -228,6 +246,7 @@ WRITING_MODES = {
         "persona_zh": "頂級常春藤名校審查委員會委員（Admissions Committee）兼資深獵頭合夥人，專精挖掘獨特個人優勢、量化成就動詞（Action Verbs）與杜絕陳詞濫調",
         "persona_en": "Ivy League Admissions Committee Member and Senior Career Strategist, expert in high-impact narrative hooks, quantified impact verbs, and personal branding",
         "sections": [
+            ("auto", "🔍 其他 / 由模型判斷 (Auto-Detect / Other)", "🔍 Other / Auto-Detect by Model"),
             ("hook", "動機開場與學術啟發 (Narrative Hook & Motivation)", "Narrative Hook & Motivation"),
             ("academic_bg", "學術與專案實績 (Academic & Technical Track Record)", "Academic & Technical Track Record"),
             ("professional", "實戰經歷與量化成果 (Impact Quantification & Leadership)", "Impact Quantification & Leadership"),
@@ -249,6 +268,7 @@ WRITING_MODES = {
         "persona_zh": "麥肯錫（McKinsey）高級戰略諮詢顧問兼高階主管簡報專家，專精以假說為導向的結構化思考（Pyramid Principle）、高密度數據洞察與決策驅動陳述",
         "persona_en": "Senior Strategy Partner at McKinsey & Company, expert in Pyramid Principle structured communication, executive conciseness, and decision-driven analytics",
         "sections": [
+            ("auto", "🔍 其他 / 由模型判斷 (Auto-Detect / Other)", "🔍 Other / Auto-Detect by Model"),
             ("exec_summary", "執行摘要與核心洞察 (Executive Summary)", "Executive Summary"),
             ("problem_diag", "痛點診斷與市場分析 (Market & Problem Diagnosis)", "Market & Problem Diagnosis"),
             ("strategic_plan", "戰略方案與ROI預估 (Strategic Plan & ROI)", "Strategic Plan & ROI"),
@@ -617,7 +637,7 @@ class IssueItem(BaseModel):
 class ResearchRecommendation(BaseModel):
     gap_identified_zh: str = Field(default="", description="論述、實證缺失或溝通策略盲點 (正體中文；若英文模式填純英文)")
     gap_identified_en: str = Field(default="", description="Strategic evidence gap or communication misalignment (English)")
-    severity: Literal["Must Address (必補/致命缺陷)", "Strongly Recommended (強烈建議補強)", "Optional (可選加分項)"] = "Strongly Recommended (強烈建議補強)"
+    severity: str = Field(default="Strongly Recommended (強烈建議補強)", description="嚴重程度 (Must Address / Strongly Recommended / Optional)")
     action_type: str = Field(default="補充消融實驗/顯著性分析", description="補強類型或具體維度")
     concrete_proposal_zh: str = Field(default="", description="具體補做或策略提升方案 (正體中文；若英文模式填純英文)")
     concrete_proposal_en: str = Field(default="", description="Concrete actionable proposal or protocol (English)")
@@ -633,11 +653,19 @@ class AcademicReviewReport(BaseModel):
         default_factory=list,
         description="提出 2 至 4 點實質情境補強建議（如實驗、論據、架構或說服力補強）"
     )
-    revised_full_text: str = Field(default="", description="綜合各項最佳建議後的完整修訂後英文文章全文")
+    collocation_issues: List[IssueItem] = Field(
+        default_factory=list,
+        description="專門針對詞彙/片語層級：列出 3 至 6 處生硬搭配詞 (Collocation Defect) 與精準用詞替換選項，每項提供 3~4 個替代風格選項"
+    )
+    discourse_issues: List[IssueItem] = Field(
+        default_factory=list,
+        description="專門針對句子/篇章層級：列出 3 至 6 處文法句構 (Grammar & Mechanics)、邏輯矛盾 (Logic Error)、推論缺陷 (Flawed Deduction)、修辭風格 (Rhetorical Defect) 的具體改進點"
+    )
     issues: List[IssueItem] = Field(
         default_factory=list,
-        description="逐句深度窮舉排查清單，列出 6 至 10 處包含搭配詞缺陷、修辭語氣、邏輯瑕疵、文法精確度的具體改進點，每項皆提供 3~4 個替代選項"
+        description="所有問題清單（由系統自動整合）"
     )
+    revised_full_text: str = Field(default="", description="綜合各項最佳建議後的完整修訂後英文文章全文")
 
 # ==========================================
 # 4. 線上 API 設定與精靈視窗
@@ -1417,13 +1445,29 @@ class ReviewWorker(QThread):
         persona = mode_info["persona_en"] if is_en else mode_info["persona_zh"]
 
         # 範疇提示
+        # 範疇提示
         if self.context_scope == "partial":
-            scope_prompt = (
-                f"【IMPORTANT CONTEXT SCOPE】: The user has indicated that this input text is a SPECIFIC PARTIAL EXCERPT "
-                f"from the [{section_name}] section. You must focus your critique specifically on the conventions, "
-                f"standards, and requirements of this particular section. Do NOT penalize the text for omitting "
-                f"information that belongs in other sections of the document."
-            )
+            if self.section_target == "auto":
+                scope_prompt = (
+                    "【IMPORTANT CONTEXT SCOPE & AUTO-DETECTION】: The user has indicated that this input text is a PARTIAL EXCERPT, "
+                    "but the exact section type is unspecified. You MUST first determine the most likely section type of this excerpt "
+                    "(e.g. Methodology, Literature Review, Discussion, Executive Summary), explicitly state your classification in "
+                    "article_gist, and evaluate the draft against appropriate international standards for that section."
+                ) if is_en else (
+                    "【重要文章範圍與自動章節識別】：使用者標記此輸入為「局部段落選取」，但章節類型設為「其他 / 由模型自動判斷」。"
+                    "你必須首先自行判讀此段落最可能所屬的章節性質（例如方法、結果、引言、文獻探討、執行摘要等），"
+                    "並在全文主旨診斷 (article_gist) 中明確註明你的章節判斷，隨後依該章節之最高國際專業標準進行審查。"
+                )
+            else:
+                scope_prompt = (
+                    f"【IMPORTANT CONTEXT SCOPE】: The user has indicated that this input text is a SPECIFIC PARTIAL EXCERPT "
+                    f"from the [{section_name}] section. You must focus your critique specifically on the conventions, "
+                    f"standards, and requirements of this particular section. Do NOT penalize the text for omitting "
+                    f"information that belongs in other sections of the document."
+                ) if is_en else (
+                    f"【重要文章範圍】：使用者已明確標記此文本為【{section_name}】的局部選取段落。"
+                    f"你的審查與修改必須緊密契合此章節的國際期刊／商務寫作慣例與結構標準，絕不可因為該段落未包含其他章節的內容而予以扣分！"
+                )
         else:
             scope_prompt = (
                 "【IMPORTANT CONTEXT SCOPE】: This is a COMPREHENSIVE / FULL text. Evaluate its overarching narrative arc, "
@@ -1439,34 +1483,34 @@ All fields (including *_zh fields) MUST contain high-standard English text.
 
 {scope_prompt}
 
-You must evaluate the input draft across two critical dimensions:
+You must evaluate the input draft across three distinct, parallel, non-mutually-exclusive dimensions:
 
-DIMENSION 1: STRATEGIC & EMPIRICAL RECOMMENDATIONS (research_recommendations)
-- Point out 2 to 4 actionable, high-impact improvements tailored to this writing context ({mode_info['name_en']}).
-- For academic writing: ablation studies, statistical significance, causal validation, confounding variables.
-- For correspondence: tone diplomacy, explicit calls-to-action, risk mitigation.
-- For application: impact quantification, action verbs, personal differentiation.
+==================================================
+DIMENSION 1: STRATEGIC & EMPIRICAL RECOMMENDATIONS (`research_recommendations`)
+==================================================
+- You MUST provide 2 to 4 actionable, high-impact improvements (gap_identified_en, concrete_proposal_en, impact_on_acceptance_en, severity).
+- For academic writing: ablation studies, statistical significance, causal validation, confounding variables, methodological defenses.
+- For correspondence: diplomatic etiquette, actionable clarity, boundary setting.
+- For application: quantified achievements, narrative arc, personal differentiation.
 - For business: strategic feasibility, ROI, execution roadmaps.
-- Provide gap_identified_en, concrete_proposal_en, impact_on_acceptance_en.
 
-DIMENSION 2: SENTENCE-BY-SENTENCE EXHAUSTIVE SCRUTINY & REVISION (issues)
-【EXHAUSTIVE THOROUGHNESS】:
-A draft of 150-300 words always has multiple subtle weaknesses. You MUST scan sentence-by-sentence and identify 6 to 10 concrete improvement items. Do NOT return merely 2 or 3 issues!
+==================================================
+DIMENSION 2: COLLOCATION & LEXICAL REVISION (`collocation_issues`)
+==================================================
+- Focus strictly on word- and phrase-level pairings: unnatural verb-noun combinations (e.g. 'make an experiment' -> conduct), loose prepositions, unidiomatic academic collocations.
+- Provide 3 to 6 distinct items.
+- For EVERY issue, provide 3 to 4 authentic stylistic options in `revision_options` (Option A: Standard, Option B: High-Impact, Option C: Cautious/Hedged, Option D: Authoritative).
 
-CATEGORIES TO COVER:
-1. "Collocation Defect" (CRITICAL FOCUS): Flag unnatural, unidiomatic, or loose word pairings (e.g. 'make an experiment', 'play a big role', 'do a decision', 'statistically big difference').
-2. "Logic Error": Contradictions, unsupported presuppositions, internal inconsistencies.
-3. "Flawed Deduction": Leaps in logic, overclaiming, hasty generalization.
-4. "Grammar & Mechanics": Faulty parallelism, dangling modifiers, subject-verb agreement, tense shifts.
-5. "Rhetorical Defect": Lack of hedging, wordiness, inappropriate register.
+==================================================
+DIMENSION 3: DISCOURSE, GRAMMAR & LOGIC CRITIQUES (`discourse_issues`)
+==================================================
+- Focus on sentence-level and discourse-level flaws: Grammar & Mechanics, Logic Error (contradictions, internal inconsistencies), Flawed Deduction (leaps in logic, overclaiming), and Rhetorical Defect.
+- Provide 3 to 6 distinct items.
 
-【MULTI-OPTION GENERATION REQUIREMENT (3 to 4 Options per issue)】:
-For EVERY issue (especially Collocations and Rhetoric), you MUST provide 3 to 4 distinct, authentic alternative revisions in `revision_options`:
-- Option A: Standard / High-Frequency Native Phrasing
-- Option B: High-Impact Concise / Action-Oriented
-- Option C: Cautious & Hedged / Nuanced
-- Option D: Authoritative / Formal Register
-Explain the exact stylistic nuance of each option in rationale_en.
+【CRITICAL RULE: DUAL NON-MUTUALLY-EXCLUSIVE TRACK】:
+A single sentence often contains BOTH a lexical/collocation flaw AND a grammatical or logical error.
+DO NOT skip grammar or logic critique just because you already flagged a collocation in that sentence!
+Both arrays (`collocation_issues` and `discourse_issues`) must be populated in parallel!
 
 JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
         else:
@@ -1475,39 +1519,38 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
 
 {scope_prompt}
 
-請針對輸入的英文草稿，在【{mode_info['name_zh']}】情境下進行兩大核心維度的【深度極限審查】：
+請針對輸入的英文草稿，在【{mode_info['name_zh']}】情境下進行三大平行且【絕不互斥】的【深度極限審查】：
 
 ==================================================
-維度一：【上下文論點完整性與實證/策略補強建議 (research_recommendations)】
+維度一：【上下文論點完整性與實證/策略補強建議 (`research_recommendations`)】
 ==================================================
-請穿透至該段落背後的邏輯與證據鏈：
-- 若為學術論文：檢視因果推論、消融實驗、顯著性檢定、混雜變因控制與防禦審稿人質疑之方案。
+【絕對必須產出】：你【必須】提出 2 至 4 點深層實質補強建議：
+- 若為學術論文：深入檢核實驗方法、因果推論、消融實驗、顯著性檢定、混雜變因控制與審稿防禦方案。
 - 若為專業書信：檢視語氣得體性、溝通透明度、明確行動呼籲與利益關係人對齊。
 - 若為申請文件：檢視個人動機說服力、成就量化動詞、避免陳詞濫調與目標契合度。
 - 若為商務報告：檢視數據洞察支撐、執行可行性與ROI決策論述。
-- 列出 2 至 4 點實質補強方案，每一項均需提供【中英雙語對照】。
+- 每一項皆必須包含：gap_identified_zh, concrete_proposal_zh, impact_on_acceptance_zh，以及 severity ("Must Address" / "Strongly Recommended" / "Optional")。
 
 ==================================================
-維度二：【逐句穿透式窮舉審查與道地搭配詞改寫 (issues)】
+維度二：【搭配詞與精準用詞替換選項 (`collocation_issues`)】
 ==================================================
-【徹底度嚴格要求】：一段 150~300 字的草稿必然隱藏諸多不成熟之處。你【必須】進行逐句深度排查，深入挖掘出 6 至 10 個具體的改進點！絕不允許僅回傳 2-3 處！
+- 專注詞彙與片語層級：精準抓出中式英文、生硬搭配、動名不合、非自然介系詞（如 make research ➔ conduct research; play an effect ➔ exert an effect; statistically big ➔ statistically significant）。
+- 產出 3 至 6 處改進點。
+- 每一處問題均【必須】在 revision_options 提供 3 至 4 個不同語感風格的替代選項 (Option A, B, C, D) 並附註詳細理由！
 
-審查面向必須全面覆蓋：
-1. 道地搭配詞 (Collocation Defect，★核心重點)：精準標記中式英文搭配、動名不合、非自然詞組（如 make research ➔ conduct research; play an effect ➔ exert an effect; statistically big ➔ statistically significant）。
-2. 邏輯矛盾 (Logic Error)：隱含假設破綻、論點前後抵觸。
-3. 推論缺陷 (Flawed Deduction)：推論跳躍、過度宣稱（Overclaiming）、因果倒置。
-4. 文法與句構 (Grammar & Mechanics)：懸垂修飾、被動語態濫用、主謂不合、平行結構瑕疵。
-5. 修辭風格 (Rhetorical Defect)：缺乏謙抑修辭、非正式俚語、贅詞冗長。
+==================================================
+維度三：【文法句構、推論缺陷、修辭風格與邏輯矛盾 (`discourse_issues`)】
+==================================================
+- 專注句子結構與篇章邏輯：懸垂修飾、主謂不合、平行結構、過度宣稱（Overclaiming）、推論跳躍、邏輯矛盾與非正式語氣。
+- 產出 3 至 6 處改進點。
 
-【多選項生成規範 (每項問題提供 3 至 4 個風格選項)】：
-對於每處問題，必須在 revision_options 提供 3 至 4 個不同語感與搭配維度的改寫選項：
-- 選項 A：標準規範／高頻道地搭配
-- 選項 B：簡練高能／行動導向
-- 選項 C：學術謙抑／謹慎精確
-- 選項 D：權威正式／書面典雅
-每一選項均需詳述其語境與語感差異！
+==================================================
+【關鍵核心規則：雙軌並行、絕不互斥 (Non-Mutually Exclusive)】
+==================================================
+一個句子若同時存在「詞彙搭配生硬（如 make an experiment）」與「文法結構錯誤（如缺少主詞/時態矛盾）」或「邏輯推論漏洞（如過度斷言 without any other factors）」，你【必須同時分開提出】！
+絕不能因為該句已在 `collocation_issues` 中被挑出，就在 `discourse_issues` 中忽略整句的結構或邏輯問題！兩者必須並存！
 
-【格式規範】：JSON 字串中若引用英文詞句，請務必使用全形引號「」或『』，切勿直接使用未跳脫的半形雙引號。請確保輸出為符合 Schema 的合法 JSON。"""
+【格式規範】：請確保輸出為符合 Schema 的合法 JSON。"""
 
         return prompt
 
@@ -1603,13 +1646,12 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
             if not data or not isinstance(data, dict):
                 raise ValueError(f"Could not parse model JSON response.\nFragment:\n{raw_content[-200:]}")
 
-            # 數據容錯與補齊
-            valid_issues = []
-            for raw_issue in data.get('issues', []):
+            # 數據容錯與補齊：雙軌獨立解析
+            def parse_issue_item(raw_issue: dict, default_category: str = "Collocation Defect") -> Optional[IssueItem]:
                 if not isinstance(raw_issue, dict) or not raw_issue.get('original_text'):
-                    continue
+                    return None
                 if not raw_issue.get('category'):
-                    raw_issue['category'] = 'Collocation Defect'
+                    raw_issue['category'] = default_category
                 if not raw_issue.get('severity'):
                     raw_issue['severity'] = 'Major'
                 if not raw_issue.get('revision_options'):
@@ -1620,17 +1662,63 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
                         "rationale_en": "Optimized for natural native register."
                     }]
                 try:
-                    valid_issues.append(IssueItem(**raw_issue))
+                    return IssueItem(**raw_issue)
                 except Exception:
-                    continue
-            data['issues'] = valid_issues
+                    return None
 
+            valid_colloc = []
+            for item in data.get('collocation_issues', []):
+                p = parse_issue_item(item, default_category="Collocation Defect")
+                if p:
+                    p.category = "Collocation Defect"
+                    valid_colloc.append(p)
+
+            valid_discourse = []
+            for item in data.get('discourse_issues', []):
+                p = parse_issue_item(item, default_category="Grammar & Mechanics")
+                if p:
+                    valid_discourse.append(p)
+
+            # 相容性回退：若模型回傳舊版單一 `issues`
+            if not valid_colloc and not valid_discourse:
+                for item in data.get('issues', []):
+                    p = parse_issue_item(item)
+                    if p:
+                        if p.category == "Collocation Defect":
+                            valid_colloc.append(p)
+                        else:
+                            valid_discourse.append(p)
+
+            data['collocation_issues'] = valid_colloc
+            data['discourse_issues'] = valid_discourse
+            data['issues'] = valid_colloc + valid_discourse
+
+            # 實證與策略補強建議解析（高容錯防禦）
             valid_recs = []
             for raw_rec in data.get('research_recommendations', []):
                 if not isinstance(raw_rec, dict):
                     continue
+                gap_zh = raw_rec.get('gap_identified_zh') or raw_rec.get('gap_identified_en') or raw_rec.get('gap_identified') or ""
+                gap_en = raw_rec.get('gap_identified_en') or raw_rec.get('gap_identified_zh') or raw_rec.get('gap_identified') or ""
+                prop_zh = raw_rec.get('concrete_proposal_zh') or raw_rec.get('concrete_proposal_en') or raw_rec.get('concrete_proposal') or ""
+                prop_en = raw_rec.get('concrete_proposal_en') or raw_rec.get('concrete_proposal_zh') or raw_rec.get('concrete_proposal') or ""
+                impact_zh = raw_rec.get('impact_on_acceptance_zh') or raw_rec.get('impact_on_acceptance_en') or raw_rec.get('impact_on_acceptance') or ""
+                impact_en = raw_rec.get('impact_on_acceptance_en') or raw_rec.get('impact_on_acceptance_zh') or raw_rec.get('impact_on_acceptance') or ""
+                sev = raw_rec.get('severity') or "Strongly Recommended (強烈建議補強)"
+                act = raw_rec.get('action_type') or "Methodology Enhancement"
+
                 try:
-                    valid_recs.append(ResearchRecommendation(**raw_rec))
+                    rec_obj = ResearchRecommendation(
+                        gap_identified_zh=str(gap_zh),
+                        gap_identified_en=str(gap_en),
+                        severity=str(sev),
+                        action_type=str(act),
+                        concrete_proposal_zh=str(prop_zh),
+                        concrete_proposal_en=str(prop_en),
+                        impact_on_acceptance_zh=str(impact_zh),
+                        impact_on_acceptance_en=str(impact_en)
+                    )
+                    valid_recs.append(rec_obj)
                 except Exception:
                     continue
             data['research_recommendations'] = valid_recs
@@ -2152,35 +2240,40 @@ class AcademicReviewerApp(QMainWindow):
 
         self.main_layout.addWidget(self.unified_toolbar, 0)
 
-        # --- 三欄分割器 ---
+        # --- 主水平分割器 (平分三欄，各佔約 1/3) ---
         self.splitter = QSplitter(Qt.Horizontal)
 
-        # 左欄
-        self.left_widget = QWidget()
-        left_layout = QVBoxLayout(self.left_widget)
-        left_layout.setContentsMargins(0, 0, 6, 0)
-        left_layout.setSpacing(6)
+        # ==========================================
+        # 左側欄位 (1/3)：垂直上下分割，上為草稿區，下為修訂全文區
+        # ==========================================
+        self.left_splitter = QSplitter(Qt.Vertical)
 
-        left_header = QHBoxLayout()
-        self.left_title_lbl = QLabel("1. 原始英文草稿:")
-        self.left_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
-        left_header.addWidget(self.left_title_lbl)
-        left_header.addStretch()
+        # 1. 原始英文草稿區 (上部)
+        self.draft_widget = QWidget()
+        draft_layout = QVBoxLayout(self.draft_widget)
+        draft_layout.setContentsMargins(0, 0, 4, 4)
+        draft_layout.setSpacing(5)
+
+        draft_header = QHBoxLayout()
+        self.draft_title_lbl = QLabel("1. 原始英文草稿:")
+        self.draft_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        draft_header.addWidget(self.draft_title_lbl)
+        draft_header.addStretch()
 
         self.word_count_lbl = QLabel("字數: 0 字")
-        left_header.addWidget(self.word_count_lbl)
-        left_layout.addLayout(left_header)
+        draft_header.addWidget(self.word_count_lbl)
+        draft_layout.addLayout(draft_header)
 
         self.text_editor = AcademicTextEdit(on_quick_fix=self.auto_fix_preflight_issues, is_dark=self.is_dark_mode, lang=self.ui_language)
         self.text_editor.setFont(QFont("Consolas", 11))
         self.text_editor.setPlainText(WRITING_MODES["academic"]["sample"])
         self.text_editor.textChanged.connect(self.on_editor_text_changed)
-        left_layout.addWidget(self.text_editor)
+        draft_layout.addWidget(self.text_editor, 1)
 
         self.preflight_box = QFrame()
         preflight_layout = QVBoxLayout(self.preflight_box)
-        preflight_layout.setContentsMargins(10, 8, 10, 8)
-        preflight_layout.setSpacing(6)
+        preflight_layout.setContentsMargins(8, 6, 8, 6)
+        preflight_layout.setSpacing(4)
 
         pf_top = QHBoxLayout()
         self.pf_title_lbl = QLabel("⚡ 本機秒篩 (純程式規則，0秒反應):")
@@ -2196,82 +2289,175 @@ class AcademicReviewerApp(QMainWindow):
         self.preflight_status_lbl = QLabel("正在進行本機語法規則快速掃描...")
         self.preflight_status_lbl.setWordWrap(True)
         preflight_layout.addWidget(self.preflight_status_lbl)
-        left_layout.addWidget(self.preflight_box)
+        draft_layout.addWidget(self.preflight_box)
 
         self.status_banner = QLabel("就緒：請確認輸入文本並點擊開始審查。")
-        left_layout.addWidget(self.status_banner)
+        draft_layout.addWidget(self.status_banner)
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 0)
         self.progress_bar.setVisible(False)
-        left_layout.addWidget(self.progress_bar)
+        draft_layout.addWidget(self.progress_bar)
 
         self.review_btn = QPushButton("🚀 開始智能審查 (搭配詞檢視與深度改寫)")
-        self.review_btn.setFixedHeight(42)
+        self.review_btn.setFixedHeight(38)
         self.review_btn.clicked.connect(self.start_review)
-        left_layout.addWidget(self.review_btn)
+        draft_layout.addWidget(self.review_btn)
 
-        self.splitter.addWidget(self.left_widget)
+        self.left_splitter.addWidget(self.draft_widget)
 
-        # 中欄
-        self.middle_widget = QWidget()
-        middle_layout = QVBoxLayout(self.middle_widget)
-        middle_layout.setContentsMargins(6, 0, 6, 0)
+        # 2. 修改後全文區 (下部)
+        self.revised_widget = QWidget()
+        revised_layout = QVBoxLayout(self.revised_widget)
+        revised_layout.setContentsMargins(0, 4, 4, 0)
+        revised_layout.setSpacing(5)
 
-        self.middle_title_lbl = QLabel("2. 審查意見、實證補強與搭配詞選項:")
-        self.middle_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
-        middle_layout.addWidget(self.middle_title_lbl)
+        revised_header = QHBoxLayout()
+        self.revised_title_lbl = QLabel("2. 修改後全文 (高亮顏色標記修改處):")
+        self.revised_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        revised_header.addWidget(self.revised_title_lbl)
+        revised_header.addStretch()
 
-        self.assessment_box = AcademicTextBrowser(is_dark=self.is_dark_mode, lang=self.ui_language)
-        self.assessment_box.setMaximumHeight(160)
-        middle_layout.addWidget(self.assessment_box)
-
-        self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
-        self.cards_container = QWidget()
-        self.cards_layout = QVBoxLayout(self.cards_container)
-        self.cards_layout.setContentsMargins(0, 0, 0, 0)
-        self.cards_layout.addStretch()
-        self.scroll_area.setWidget(self.cards_container)
-        middle_layout.addWidget(self.scroll_area)
-
-        self.splitter.addWidget(self.middle_widget)
-
-        # 右欄
-        self.right_widget = QWidget()
-        right_layout = QVBoxLayout(self.right_widget)
-        right_layout.setContentsMargins(6, 0, 0, 0)
-
-        right_header = QHBoxLayout()
-        self.right_title_lbl = QLabel("3. 修改後全文 (高亮顏色標記修改處):")
-        self.right_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
-        right_header.addWidget(self.right_title_lbl)
-        right_header.addStretch()
-
-        self.sync_to_left_btn = QPushButton("⬅️ 同步至左側草稿")
+        self.sync_to_left_btn = QPushButton("⬆️ 同步至草稿")
         self.sync_to_left_btn.clicked.connect(self.sync_revised_to_left)
-        right_header.addWidget(self.sync_to_left_btn)
+        revised_header.addWidget(self.sync_to_left_btn)
 
         self.copy_btn = QPushButton("📋 複製修訂全文")
         self.copy_btn.clicked.connect(self.copy_revised_text)
-        right_header.addWidget(self.copy_btn)
-        right_layout.addLayout(right_header)
+        revised_header.addWidget(self.copy_btn)
+        revised_layout.addLayout(revised_header)
 
         self.legend_label = QLabel()
-        self.legend_label.setStyleSheet("font-size: 11px; margin-bottom: 4px;")
-        right_layout.addWidget(self.legend_label)
+        self.legend_label.setStyleSheet("font-size: 11px; margin-bottom: 2px;")
+        revised_layout.addWidget(self.legend_label)
 
         self.revised_browser = AcademicTextBrowser(is_dark=self.is_dark_mode, lang=self.ui_language)
         self.revised_browser.setFont(QFont("Consolas", 11))
-        right_layout.addWidget(self.revised_browser)
+        revised_layout.addWidget(self.revised_browser, 1)
+
+        self.left_splitter.addWidget(self.revised_widget)
+        self.left_splitter.setSizes([430, 390])
+
+        self.splitter.addWidget(self.left_splitter)
+
+        # ==========================================
+        # 中間欄位 (1/3)：垂直上下分割，上為實質建議與缺失分析，下為搭配詞替換選項
+        # ==========================================
+        self.middle_splitter = QSplitter(Qt.Vertical)
+
+        # 3. 審查實質建議與實證缺失分析 (上部 1/2)
+        self.middle_top_widget = QWidget()
+        middle_top_layout = QVBoxLayout(self.middle_top_widget)
+        middle_top_layout.setContentsMargins(4, 0, 4, 4)
+        middle_top_layout.setSpacing(5)
+
+        self.recs_title_lbl = QLabel("3. 審查實質建議與實證缺失分析 (上部 1/2):")
+        self.recs_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        middle_top_layout.addWidget(self.recs_title_lbl)
+
+        self.assessment_box = AcademicTextBrowser(is_dark=self.is_dark_mode, lang=self.ui_language)
+        self.assessment_box.setMaximumHeight(130)
+        middle_top_layout.addWidget(self.assessment_box)
+
+        self.recs_scroll_area = QScrollArea()
+        self.recs_scroll_area.setWidgetResizable(True)
+        self.recs_container = QWidget()
+        self.recs_layout = QVBoxLayout(self.recs_container)
+        self.recs_layout.setContentsMargins(0, 0, 0, 0)
+        self.recs_layout.addStretch()
+        self.recs_scroll_area.setWidget(self.recs_container)
+        middle_top_layout.addWidget(self.recs_scroll_area, 1)
+
+        self.middle_splitter.addWidget(self.middle_top_widget)
+
+        # 4. 搭配詞替換選項與精準用詞編修 (下部 1/2)
+        self.middle_bottom_widget = QWidget()
+        middle_bottom_layout = QVBoxLayout(self.middle_bottom_widget)
+        middle_bottom_layout.setContentsMargins(4, 4, 4, 0)
+        middle_bottom_layout.setSpacing(5)
+
+        self.colloc_title_lbl = QLabel("4. 搭配詞替換選項與精準用詞編修 (下部 1/2):")
+        self.colloc_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        middle_bottom_layout.addWidget(self.colloc_title_lbl)
+
+        self.colloc_scroll_area = QScrollArea()
+        self.colloc_scroll_area.setWidgetResizable(True)
+        self.colloc_container = QWidget()
+        self.colloc_layout = QVBoxLayout(self.colloc_container)
+        self.colloc_layout.setContentsMargins(0, 0, 0, 0)
+        self.colloc_layout.addStretch()
+        self.colloc_scroll_area.setWidget(self.colloc_container)
+        middle_bottom_layout.addWidget(self.colloc_scroll_area, 1)
+
+        self.middle_splitter.addWidget(self.middle_bottom_widget)
+        self.middle_splitter.setSizes([410, 410])
+
+        self.splitter.addWidget(self.middle_splitter)
+
+        # ==========================================
+        # 右側欄位 (1/3)：全高，專門呈現文法句構、推論缺陷、修辭風格與邏輯矛盾
+        # ==========================================
+        self.right_widget = QWidget()
+        right_layout = QVBoxLayout(self.right_widget)
+        right_layout.setContentsMargins(4, 0, 0, 0)
+        right_layout.setSpacing(5)
+
+        self.discourse_title_lbl = QLabel("5. 文法句構、推論缺陷、修辭風格與邏輯矛盾 (全高):")
+        self.discourse_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        right_layout.addWidget(self.discourse_title_lbl)
+
+        self.discourse_scroll_area = QScrollArea()
+        self.discourse_scroll_area.setWidgetResizable(True)
+        self.discourse_container = QWidget()
+        self.discourse_layout = QVBoxLayout(self.discourse_container)
+        self.discourse_layout.setContentsMargins(0, 0, 0, 0)
+        self.discourse_layout.addStretch()
+        self.discourse_scroll_area.setWidget(self.discourse_container)
+        right_layout.addWidget(self.discourse_scroll_area, 1)
 
         self.splitter.addWidget(self.right_widget)
-        self.splitter.setSizes([470, 540, 470])
+
+        # 平分三欄 (各 1/3)
+        self.splitter.setSizes([500, 500, 520])
         self.main_layout.addWidget(self.splitter, 1)
+
+        # 相容舊有名稱別名 (防止 AttributeError)
+        self.left_widget = self.left_splitter
+        self.left_title_lbl = self.draft_title_lbl
+        self.right_title_lbl = self.revised_title_lbl
+        self.middle_widget = self.middle_splitter
+        self.middle_title_lbl = self.recs_title_lbl
+        self.scroll_area = self.discourse_scroll_area
+        self.cards_layout = self.discourse_layout
 
         self.refresh_section_combo()
         self.update_engine_ui()
         self.run_preflight_analysis()
+        self.reset_card_placeholders()
+
+    def reset_card_placeholders(self):
+        if self.current_report:
+            return
+        self.clear_cards()
+        t = I18N.get(self.ui_language, I18N["zh_TW"])
+
+        lbl_recs = QLabel(t["recs_placeholder_text"])
+        lbl_recs.setStyleSheet("color: #94a3b8; font-size: 11px; padding: 10px;")
+        lbl_recs.setWordWrap(True)
+        self.recs_layout.addWidget(lbl_recs)
+        self.recs_layout.addStretch()
+
+        lbl_colloc = QLabel(t["colloc_placeholder_text"])
+        lbl_colloc.setStyleSheet("color: #94a3b8; font-size: 11px; padding: 10px;")
+        lbl_colloc.setWordWrap(True)
+        self.colloc_layout.addWidget(lbl_colloc)
+        self.colloc_layout.addStretch()
+
+        lbl_disc = QLabel(t["discourse_placeholder_text"])
+        lbl_disc.setStyleSheet("color: #94a3b8; font-size: 11px; padding: 10px;")
+        lbl_disc.setWordWrap(True)
+        self.discourse_layout.addWidget(lbl_disc)
+        self.discourse_layout.addStretch()
 
     # --- 語言切換邏輯 (繁體中文 / Pure English) ---
     def toggle_language(self):
@@ -2324,13 +2510,15 @@ class AcademicReviewerApp(QMainWindow):
 
         self.refresh_section_combo()
 
-        # 三欄標題
-        self.left_title_lbl.setText(t["left_title"])
+        # 各欄位標題
+        self.draft_title_lbl.setText(t["draft_title"])
+        self.revised_title_lbl.setText(t["revised_title"])
+        self.recs_title_lbl.setText(t["recs_title"])
+        self.colloc_title_lbl.setText(t["colloc_title"])
+        self.discourse_title_lbl.setText(t["discourse_title"])
         self.pf_title_lbl.setText(t["pf_title"])
         self.quick_fix_btn.setText(t["quick_fix_btn"])
         self.review_btn.setText(t["btn_start_review"])
-        self.middle_title_lbl.setText(t["middle_title"])
-        self.right_title_lbl.setText(t["right_title"])
         self.sync_to_left_btn.setText(t["sync_left"])
         self.copy_btn.setText(t["copy_revised"])
 
@@ -2338,6 +2526,7 @@ class AcademicReviewerApp(QMainWindow):
             self.assessment_box.setHtml(t["assessment_placeholder"])
             self.revised_browser.setHtml(t["revised_placeholder"])
             self.status_banner.setText(t["status_ready"])
+            self.reset_card_placeholders()
 
         self.update_engine_ui()
         self.update_legend_text()
@@ -2418,9 +2607,11 @@ class AcademicReviewerApp(QMainWindow):
 
             self.central_widget.setStyleSheet(f"background-color: {bg_main}; color: {text_main};")
             self.title_label.setStyleSheet(f"color: {text_main};")
-            self.left_title_lbl.setStyleSheet(f"color: {text_main};")
-            self.middle_title_lbl.setStyleSheet(f"color: {text_main};")
-            self.right_title_lbl.setStyleSheet(f"color: {text_main};")
+            self.draft_title_lbl.setStyleSheet(f"color: {text_main};")
+            self.revised_title_lbl.setStyleSheet(f"color: {text_main};")
+            self.recs_title_lbl.setStyleSheet(f"color: {text_main};")
+            self.colloc_title_lbl.setStyleSheet(f"color: {text_main};")
+            self.discourse_title_lbl.setStyleSheet(f"color: {text_main};")
             self.model_label.setStyleSheet(f"color: {text_sub};")
             self.word_count_lbl.setStyleSheet(f"color: {text_sub}; font-size: 11px;")
             self.pf_title_lbl.setStyleSheet(f"color: {text_main};")
@@ -2459,7 +2650,13 @@ class AcademicReviewerApp(QMainWindow):
             for c in [self.engine_combo, self.model_combo, self.mode_combo, self.scope_combo, self.section_combo]:
                 c.setStyleSheet(combo_style)
 
-            self.scroll_area.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+            for sa in [self.recs_scroll_area, self.colloc_scroll_area, self.discourse_scroll_area]:
+                sa.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+
+            splitter_style = "QSplitter::handle { background-color: #334155; }"
+            self.left_splitter.setStyleSheet(splitter_style)
+            self.middle_splitter.setStyleSheet(splitter_style)
+            self.splitter.setStyleSheet(splitter_style)
         else:
             bg_main = "#f8fafc"
             bg_card = "#ffffff"
@@ -2469,9 +2666,11 @@ class AcademicReviewerApp(QMainWindow):
 
             self.central_widget.setStyleSheet(f"background-color: {bg_main}; color: {text_main};")
             self.title_label.setStyleSheet(f"color: {text_main};")
-            self.left_title_lbl.setStyleSheet(f"color: {text_main};")
-            self.middle_title_lbl.setStyleSheet(f"color: {text_main};")
-            self.right_title_lbl.setStyleSheet(f"color: {text_main};")
+            self.draft_title_lbl.setStyleSheet(f"color: {text_main};")
+            self.revised_title_lbl.setStyleSheet(f"color: {text_main};")
+            self.recs_title_lbl.setStyleSheet(f"color: {text_main};")
+            self.colloc_title_lbl.setStyleSheet(f"color: {text_main};")
+            self.discourse_title_lbl.setStyleSheet(f"color: {text_main};")
             self.model_label.setStyleSheet(f"color: {text_sub};")
             self.word_count_lbl.setStyleSheet(f"color: #64748b; font-size: 11px;")
             self.pf_title_lbl.setStyleSheet(f"color: {text_main};")
@@ -2510,7 +2709,13 @@ class AcademicReviewerApp(QMainWindow):
             for c in [self.engine_combo, self.model_combo, self.mode_combo, self.scope_combo, self.section_combo]:
                 c.setStyleSheet(combo_style)
 
-            self.scroll_area.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+            for sa in [self.recs_scroll_area, self.colloc_scroll_area, self.discourse_scroll_area]:
+                sa.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+
+            splitter_style = "QSplitter::handle { background-color: #cbd5e1; }"
+            self.left_splitter.setStyleSheet(splitter_style)
+            self.middle_splitter.setStyleSheet(splitter_style)
+            self.splitter.setStyleSheet(splitter_style)
 
         self.update_legend_text()
         self.update_revised_article_view()
@@ -2714,9 +2919,11 @@ class AcademicReviewerApp(QMainWindow):
 
     def setup_live_stream_console(self):
         is_en = (self.ui_language == "en_US")
+
+        # 1. 於右側欄位呈現全高串流監控控制台
         label = QLabel("📡 Live Token Stream Monitor:" if is_en else "📡 即時輸出監控 (模型正於背景進行窮舉批判，保證非卡住):")
-        label.setStyleSheet("font-weight: bold; font-size: 11px; margin-bottom: 4px;")
-        self.cards_layout.addWidget(label)
+        label.setStyleSheet("font-weight: bold; font-size: 11px; margin-bottom: 4px; color: #38bdf8;")
+        self.discourse_layout.addWidget(label)
 
         self.live_stream_box = AcademicTextEdit(is_dark=self.is_dark_mode, lang=self.ui_language)
         self.live_stream_box.setReadOnly(True)
@@ -2728,8 +2935,19 @@ class AcademicReviewerApp(QMainWindow):
             }
         """)
         self.live_stream_box.setPlaceholderText("Waiting for model stream tokens..." if is_en else "正在等待模型送出首個 Token...")
-        self.cards_layout.addWidget(self.live_stream_box)
-        self.cards_layout.addStretch()
+        self.discourse_layout.addWidget(self.live_stream_box)
+        self.discourse_layout.addStretch()
+
+        # 2. 於中間上部與下部提供審查狀態指示
+        recs_hint = QLabel("⏳ 審查進行中：正在生成研究策略與實證缺失分析..." if not is_en else "⏳ Reviewing: generating strategic proposals and evidence gaps...")
+        recs_hint.setStyleSheet("color: #a855f7; font-size: 11px; font-weight: bold; padding: 10px;")
+        self.recs_layout.addWidget(recs_hint)
+        self.recs_layout.addStretch()
+
+        colloc_hint = QLabel("⏳ 審查進行中：正在窮舉道地搭配詞與多風格替換..." if not is_en else "⏳ Reviewing: evaluating idiomatic collocations and lexical options...")
+        colloc_hint.setStyleSheet("color: #10b981; font-size: 11px; font-weight: bold; padding: 10px;")
+        self.colloc_layout.addWidget(colloc_hint)
+        self.colloc_layout.addStretch()
 
     @Slot(str, int)
     def on_chunk_received(self, delta: str, chunk_count: int):
@@ -2767,43 +2985,70 @@ class AcademicReviewerApp(QMainWindow):
         gist_val = report.article_gist_en if is_en else (report.article_gist_zh or report.article_gist_en)
         assessment_html = f"""
         <div style='font-family: Segoe UI, sans-serif;'>
-            <p><b>{t['gist_title']}</b><br><span>{html.escape(gist_val)}</span></p>
-            <hr style='border: 0; border-top: 1px solid #cbd5e1; margin: 6px 0;'>
+            <p style='margin: 0 0 4px 0;'><b>{t['gist_title']}</b><br><span>{html.escape(gist_val)}</span></p>
+            <hr style='border: 0; border-top: 1px solid #cbd5e1; margin: 4px 0;'>
         """
         if not is_en and report.overall_assessment_zh:
-            assessment_html += f"<p><b>{t['overall_zh_title']}</b><br><span style='color: #10b981;'>{html.escape(report.overall_assessment_zh)}</span></p>"
-        assessment_html += f"<p><b>{t['overall_en_title']}</b><br><span style='font-style: italic;'>{html.escape(report.overall_assessment_en)}</span></p></div>"
+            assessment_html += f"<p style='margin: 0 0 3px 0;'><b>{t['overall_zh_title']}</b><br><span style='color: #10b981;'>{html.escape(report.overall_assessment_zh)}</span></p>"
+        assessment_html += f"<p style='margin: 0;'><b>{t['overall_en_title']}</b><br><span style='font-style: italic;'>{html.escape(report.overall_assessment_en)}</span></p></div>"
         self.assessment_box.setHtml(assessment_html)
 
         self.clear_cards()
         self.live_stream_box = None
 
+        # 1. 渲染中欄上部：審查實質建議與實證缺失分析 (Research Recommendations)
         recommendations = getattr(report, 'research_recommendations', [])
         if recommendations:
             rec_header_text = f"🔬 Strategic & Contextual Recommendations ({len(recommendations)} Items):" if is_en else f"🔬 審查員實質建議：上下文完整性與論證/實驗補強 ({len(recommendations)} 項):"
             rec_header = QLabel(rec_header_text)
-            rec_header.setStyleSheet("font-weight: bold; color: #8b5cf6; font-size: 13px; margin-top: 4px; margin-bottom: 2px;")
-            self.cards_layout.addWidget(rec_header)
+            rec_header.setStyleSheet("font-weight: bold; color: #8b5cf6; font-size: 12px; margin-top: 2px; margin-bottom: 4px;")
+            self.recs_layout.addWidget(rec_header)
 
             for rec in recommendations:
                 rec_card = ResearchRecommendationCard(rec, is_dark=self.is_dark_mode, lang=self.ui_language)
-                self.cards_layout.addWidget(rec_card)
-
-        issues_header_text = f"✍️ Sentence-by-Sentence Diagnostics & Collocation Options ({len(report.issues)} Points):" if is_en else f"✍️ 逐句文意診斷、搭配詞與多風格改寫 ({len(report.issues)} 處改進點):"
-        issues_header = QLabel(issues_header_text)
-        issues_header.setStyleSheet("font-weight: bold; color: #3b82f6; font-size: 13px; margin-top: 12px; margin-bottom: 2px;")
-        self.cards_layout.addWidget(issues_header)
-
-        if not report.issues:
-            no_issue = QLabel("✨ Outstanding draft! No significant stylistic or linguistic defects found." if is_en else "✨ 未發現明顯語言或推論問題，論述嚴謹且文法正確！")
-            no_issue.setStyleSheet("color: #10b981; font-weight: bold; margin-top: 10px;")
-            self.cards_layout.addWidget(no_issue)
+                self.recs_layout.addWidget(rec_card)
         else:
-            for idx, issue in enumerate(report.issues):
-                card = IssueCard(idx, issue, self.handle_option_selection, is_dark=self.is_dark_mode, lang=self.ui_language)
-                self.cards_layout.addWidget(card)
+            no_rec = QLabel("✨ Solid reasoning; no critical evidence gaps identified." if is_en else "✨ 論點完整嚴謹，未發現重大實證或方法缺失。")
+            no_rec.setStyleSheet("color: #10b981; font-weight: bold; margin-top: 6px; padding: 8px;")
+            self.recs_layout.addWidget(no_rec)
+        self.recs_layout.addStretch()
 
-        self.cards_layout.addStretch()
+        # 分流搭配詞與文法/邏輯問題，確保雙軌並行且不互斥
+        colloc_items = [(idx, issue) for idx, issue in enumerate(report.issues) if issue.category == "Collocation Defect"]
+        discourse_items = [(idx, issue) for idx, issue in enumerate(report.issues) if issue.category != "Collocation Defect"]
+
+        # 2. 渲染中欄下部：搭配詞替換選項與精準用詞編修 (Collocations)
+        if colloc_items:
+            c_header_text = f"🟢 Natural Collocations & Lexical Precision ({len(colloc_items)} Points):" if is_en else f"🟢 道地搭配詞替換與精準用詞 ({len(colloc_items)} 處):"
+            c_header = QLabel(c_header_text)
+            c_header.setStyleSheet("font-weight: bold; color: #059669; font-size: 12px; margin-top: 2px; margin-bottom: 4px;")
+            self.colloc_layout.addWidget(c_header)
+
+            for idx, issue in colloc_items:
+                card = IssueCard(idx, issue, self.handle_option_selection, is_dark=self.is_dark_mode, lang=self.ui_language)
+                self.colloc_layout.addWidget(card)
+        else:
+            no_colloc = QLabel("✨ Idiomatic and natural word pairings throughout." if is_en else "✨ 搭配詞自然道地，無明顯生硬用詞！")
+            no_colloc.setStyleSheet("color: #10b981; font-weight: bold; margin-top: 6px; padding: 8px;")
+            self.colloc_layout.addWidget(no_colloc)
+        self.colloc_layout.addStretch()
+
+        # 3. 渲染右側欄位：文法句構、推論缺陷、修辭風格與邏輯矛盾 (Discourse, Logic & Grammar)
+        if discourse_items:
+            d_header_text = f"✍️ Discourse, Logic, Rhetoric & Grammar Critiques ({len(discourse_items)} Points):" if is_en else f"✍️ 文法句構、推論缺陷、修辭風格與邏輯矛盾 ({len(discourse_items)} 處改進點):"
+            d_header = QLabel(d_header_text)
+            d_header.setStyleSheet("font-weight: bold; color: #3b82f6; font-size: 12px; margin-top: 2px; margin-bottom: 4px;")
+            self.discourse_layout.addWidget(d_header)
+
+            for idx, issue in discourse_items:
+                card = IssueCard(idx, issue, self.handle_option_selection, is_dark=self.is_dark_mode, lang=self.ui_language)
+                self.discourse_layout.addWidget(card)
+        else:
+            no_disc = QLabel("✨ Flawless grammar and logically sound discourse." if is_en else "✨ 文法正確，論證嚴密，無邏輯或修辭缺陷！")
+            no_disc.setStyleSheet("color: #10b981; font-weight: bold; margin-top: 6px; padding: 8px;")
+            self.discourse_layout.addWidget(no_disc)
+        self.discourse_layout.addStretch()
+
         self.update_revised_article_view()
 
     @Slot(str)
@@ -2819,11 +3064,12 @@ class AcademicReviewerApp(QMainWindow):
         QMessageBox.critical(self, "Review Failed", f"Could not complete review:\n{err_msg}")
 
     def clear_cards(self):
-        while self.cards_layout.count():
-            item = self.cards_layout.takeAt(0)
-            widget = item.widget()
-            if widget:
-                widget.deleteLater()
+        for layout in [self.recs_layout, self.colloc_layout, self.discourse_layout]:
+            while layout.count():
+                item = layout.takeAt(0)
+                widget = item.widget()
+                if widget:
+                    widget.deleteLater()
 
     def handle_option_selection(self, issue_idx: int, option_idx: int):
         self.selected_options[issue_idx] = option_idx
@@ -2941,7 +3187,7 @@ class AcademicReviewerApp(QMainWindow):
             return
         self.text_editor.setPlainText(self.latest_revised_plain_text)
         is_en = (self.ui_language == "en_US")
-        msg = "Synchronized revised full text to draft editor." if is_en else "已將右側修訂後全文同步至左側草稿區。"
+        msg = "Synchronized revised full text to draft editor." if is_en else "已將修訂後全文同步至上方草稿區。"
         self.status_banner.setText(msg)
         self.status_banner.setStyleSheet("color: #10b981; font-weight: bold; font-size: 11px;")
 
