@@ -96,7 +96,7 @@ class UninstallWorker(QThread):
             # 同時清理另一候選目錄（若存在）
             local_appdata = os.environ.get("LOCALAPPDATA", "")
             if local_appdata:
-                for candidate_name in ["AcademicReviewer", "LibreLlamaReviewer"]:
+                for candidate_name in ["AcademicReviewer", "LibreLlamaReviewer", "LibreLlamaLabEditor"]:
                     candidate_path = os.path.join(local_appdata, candidate_name)
                     if candidate_path.lower() != self.install_dir.lower() and os.path.exists(candidate_path):
                         try:
@@ -105,7 +105,7 @@ class UninstallWorker(QThread):
                             pass
 
             self.progress.emit(100, "解除安裝已完成！")
-            self.finished.emit(True, "【LibreLlama Reviewer】已成功從此電腦完全移除。")
+            self.finished.emit(True, "【LibreLlama Lab Editor】已成功從此電腦完全移除。")
         except Exception as e:
             self.finished.emit(False, f"解除安裝時發生異常: {str(e)}")
 
@@ -113,7 +113,7 @@ class UninstallWindow(QWidget):
     def __init__(self, install_dir: str):
         super().__init__()
         self.install_dir = install_dir
-        self.setWindowTitle("LibreLlama Reviewer ─ 解除安裝精靈")
+        self.setWindowTitle("LibreLlama Lab Editor ─ 解除安裝精靈")
         self.resize(520, 280)
         self.worker = None
 
@@ -133,7 +133,7 @@ class UninstallWindow(QWidget):
             QProgressBar::chunk { background-color: #ef4444; border-radius: 4px; }
         """)
 
-        title = QLabel("您確定要解除安裝【LibreLlama Reviewer】嗎？")
+        title = QLabel("您確定要解除安裝【LibreLlama Lab Editor】嗎？")
         title.setFont(QFont("Segoe UI", 13, QFont.Bold))
         layout.addWidget(title)
 
@@ -221,7 +221,7 @@ def main():
         current_exe = sys.executable if getattr(sys, 'frozen', False) else os.path.abspath(__file__)
         install_dir = os.path.dirname(current_exe)
         try:
-            temp_exe = os.path.join(tempfile.gettempdir(), "LibreLlamaReviewer_uninstaller.exe")
+            temp_exe = os.path.join(tempfile.gettempdir(), "LibreLlamaLabEditor_uninstaller.exe")
             shutil.copy2(current_exe, temp_exe)
             subprocess.Popen([temp_exe, "--from-temp", install_dir])
             sys.exit(0)

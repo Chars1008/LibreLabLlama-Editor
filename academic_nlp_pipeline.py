@@ -136,11 +136,15 @@ class AcademicNLPPipeline:
             if spacy is None:
                 raise RuntimeError("spaCy is not installed in the current environment.")
             try:
-                cls._nlp_instance = spacy.load("en_core_web_sm")
-            except OSError:
-                import subprocess
-                subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
-                cls._nlp_instance = spacy.load("en_core_web_sm")
+                import en_core_web_sm
+                cls._nlp_instance = en_core_web_sm.load()
+            except Exception:
+                try:
+                    cls._nlp_instance = spacy.load("en_core_web_sm")
+                except OSError:
+                    import subprocess
+                    subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
+                    cls._nlp_instance = spacy.load("en_core_web_sm")
         return cls._nlp_instance
 
     # ---------------------------------------------------------
