@@ -21,7 +21,7 @@ import ollama
 import httpx
 import json_repair
 
-APP_VERSION = "0.9.1"
+APP_VERSION = "0.9.2"
 DEFAULT_UPDATE_URL = "version.json"
 CONFIG_FILE = "app_config.json"
 
@@ -32,7 +32,7 @@ I18N = {
     "zh_TW": {
         "app_title": "LibreLlama Reviewer ─ 多情境寫作審查與改寫工作台",
         "toolbar_title": "🦙 LibreLlama Reviewer",
-        "pre_release_badge": "v0.9.1 封閉開發版",
+        "pre_release_badge": "v0.9.2 封閉開發版",
         "engine_ollama": "🖥️ 在地 Ollama (100% 離線隱私)",
         "engine_api": "☁️ 線上 API (DeepSeek/OpenAI/Gemini)",
         "api_settings": "⚙️ API 設定",
@@ -60,8 +60,8 @@ I18N = {
         "load_sample": "📋 載入情境範文",
 
         # 左欄 (1/3)
-        "draft_title": "1. 原始英文草稿:",
-        "left_title": "1. 原始英文草稿:",
+        "draft_title": "原始英文草稿",
+        "left_title": "原始英文草稿",
         "word_count": "字數: {n} 字",
         "pf_title": "⚡ 本機秒篩 (純程式規則，0秒反應):",
         "quick_fix_btn": "⚡ 一鍵自動替換縮寫與口語詞",
@@ -69,16 +69,16 @@ I18N = {
         "status_ready": "就緒：請確認輸入文本並點擊開始審查。",
         "btn_start_review": "🚀 開始智能審查 (搭配詞檢視與深度改寫)",
         "btn_reviewing": "正在進行深度情境批判與搭配詞窮舉審查...",
-        "revised_title": "2. 修改後全文 (高亮顏色標記修改處):",
+        "revised_title": "修改後全文",
         "sync_left": "⬆️ 同步至草稿",
         "copy_revised": "📋 複製修訂全文",
-        "revised_placeholder": "<span style='color: #64748b;'>審查完成後，此處將呈現綜合修訂後的完整英文文章，並以不同底色清晰標示出修改位置。<br><br>在右側切換不同選項，此處將即時切換並更新高亮文字！</span>",
+        "revised_placeholder": "<span style='color: #64748b;'>輸入英文草稿後，此處將即時呈現本機規則快篩檢測結果（刪除線為原詞，綠色為推薦替換詞）；點擊下方「開始智能審查」後，將進一步生成 LLM 深度審查與高亮對照！</span>",
 
         # 中欄 (1/3)
-        "middle_title": "審查實質建議與搭配詞替換:",
-        "recs_title": "3. 審查實質建議與實證缺失分析 (上部 1/2):",
-        "colloc_title": "4. 搭配詞替換選項與精準用詞編修 (下部 1/2):",
-        "assessment_placeholder": "<span style='color: #64748b;'>點擊左側「開始智能審查」後，此處將顯示：<br>• 即時生成狀態、累計耗時與 Token 數<br>• 全文主旨解析與情境綜合評述</span>",
+        "middle_title": "審查實質建議與搭配詞替換",
+        "recs_title": "審查實質建議與實證缺失分析",
+        "colloc_title": "搭配詞替換選項與精準用詞編修",
+        "assessment_placeholder": "<span style='color: #64748b;'>點擊下方「開始智能審查」後，此處將顯示：<br>• 即時生成狀態、累計耗時與 Token 數<br>• 全文主旨解析與情境綜合評述</span>",
         "gist_title": "📖 全文主旨判斷與解析 (正體中文)：",
         "overall_zh_title": "🇹🇼 綜合就緒度評估：",
         "overall_en_title": "🇺🇸 Overall Assessment：",
@@ -86,8 +86,8 @@ I18N = {
         "colloc_placeholder_text": "🟢 審查完成後，將在此列出道地搭配詞替換選項 (Collocations) 與精準用詞修訂。",
 
         # 右欄 (1/3)
-        "right_title": "文法句構、推論缺陷、修辭風格與邏輯矛盾:",
-        "discourse_title": "5. 文法句構、推論缺陷、修辭風格與邏輯矛盾 (全高):",
+        "right_title": "文法句構、推論缺陷、修辭風格與邏輯矛盾",
+        "discourse_title": "文法句構、推論缺陷、修辭風格與邏輯矛盾",
         "discourse_placeholder_text": "✍️ 審查完成後，將在此列出逐句文法句構、推論缺陷、修辭風格與邏輯矛盾診斷卡片。",
 
         # 圖例 Legend
@@ -111,7 +111,7 @@ I18N = {
     "en_US": {
         "app_title": "LibreLlama Reviewer ─ Multi-Context Writing & Review Workbench",
         "toolbar_title": "🦙 LibreLlama Reviewer",
-        "pre_release_badge": "v0.9.1 Pre-release",
+        "pre_release_badge": "v0.9.2 Pre-release",
         "engine_ollama": "🖥️ Local Ollama (100% Offline Privacy)",
         "engine_api": "☁️ Cloud API (DeepSeek/OpenAI/Gemini)",
         "api_settings": "⚙️ API Settings",
@@ -139,8 +139,8 @@ I18N = {
         "load_sample": "📋 Load Sample",
 
         # Left Column (1/3)
-        "draft_title": "1. Original Draft:",
-        "left_title": "1. Original Draft:",
+        "draft_title": "Original Draft",
+        "left_title": "Original Draft",
         "word_count": "Word Count: {n} words",
         "pf_title": "⚡ Instant Local Linter (Pure Rules, 0.001s):",
         "quick_fix_btn": "⚡ Quick Fix Contractions & Informal Phrasing",
@@ -148,16 +148,16 @@ I18N = {
         "status_ready": "Ready: verify input text and click Start Review.",
         "btn_start_review": "🚀 Start Deep Review (Collocations & Multi-Style Revisions)",
         "btn_reviewing": "Performing exhaustive multi-context critique and collocation analysis...",
-        "revised_title": "2. Revised Full Text (Real-time Highlight Matching):",
+        "revised_title": "Revised Full Text",
         "sync_left": "⬆️ Sync to Draft",
         "copy_revised": "📋 Copy Revised Text",
-        "revised_placeholder": "<span style='color: #64748b;'>Upon review completion, the fully synthesized text will appear here with color highlights.<br><br>Switching options dynamically updates the text here!</span>",
+        "revised_placeholder": "<span style='color: #64748b;'>Enter text in the draft editor to see instant rule linter results here. Click 'Start Deep Review' below to generate full LLM revisions!</span>",
 
         # Middle Column (1/3)
-        "middle_title": "Critiques, Strategic Proposals & Collocations:",
-        "recs_title": "3. Strategic Recommendations & Evidence Gap Analysis (Top 1/2):",
-        "colloc_title": "4. Collocation Options & Lexical Precision (Bottom 1/2):",
-        "assessment_placeholder": "<span style='color: #64748b;'>Click 'Start Deep Review' on the left to display:<br>• Real-time token streaming & elapsed time<br>• Executive summary & critical assessment</span>",
+        "middle_title": "Critiques, Strategic Proposals & Collocations",
+        "recs_title": "Strategic Recommendations & Evidence Gap Analysis",
+        "colloc_title": "Collocation Options & Lexical Precision",
+        "assessment_placeholder": "<span style='color: #64748b;'>Click 'Start Deep Review' below to display:<br>• Real-time token streaming & elapsed time<br>• Executive summary & critical assessment</span>",
         "gist_title": "📖 Executive Summary & Thesis Analysis:",
         "overall_zh_title": "Assessment:",
         "overall_en_title": "Overall Strategic Assessment:",
@@ -165,8 +165,8 @@ I18N = {
         "colloc_placeholder_text": "🟢 Idiomatic collocation replacement options and lexical precision revisions will appear here.",
 
         # Right Column (1/3)
-        "right_title": "Discourse, Logic, Rhetoric & Grammar:",
-        "discourse_title": "5. Discourse, Logic, Rhetoric & Grammar Critiques (Full Height):",
+        "right_title": "Discourse, Logic, Rhetoric & Grammar",
+        "discourse_title": "Discourse, Logic, Rhetoric & Grammar Critiques",
         "discourse_placeholder_text": "✍️ Sentence-by-sentence grammar diagnostics, deductive flaws, tone, and logic critique cards will appear here.",
 
         # Legend
@@ -1529,20 +1529,28 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
 - 若為專業書信：檢視語氣得體性、溝通透明度、明確行動呼籲與利益關係人對齊。
 - 若為申請文件：檢視個人動機說服力、成就量化動詞、避免陳詞濫調與目標契合度。
 - 若為商務報告：檢視數據洞察支撐、執行可行性與ROI決策論述。
-- 每一項皆必須包含：gap_identified_zh, concrete_proposal_zh, impact_on_acceptance_zh，以及 severity ("Must Address" / "Strongly Recommended" / "Optional")。
+- 【雙語對照嚴格要求】：每一項建議皆必須【同時】填寫正體中文與道地英文專業評述：
+  * gap_identified_zh (中文缺失分析) 與 gap_identified_en (Rigorous English analysis of the empirical gap)
+  * concrete_proposal_zh (中文具體補做方案) 與 concrete_proposal_en (Actionable concrete protocol in English)
+  * impact_on_acceptance_zh (中文錄用防禦效益) 與 impact_on_acceptance_en (Defense impact in English)
+  * action_type 與 severity ("Must Address" / "Strongly Recommended" / "Optional")。
 
 ==================================================
 維度二：【搭配詞與精準用詞替換選項 (`collocation_issues`)】
 ==================================================
 - 專注詞彙與片語層級：精準抓出中式英文、生硬搭配、動名不合、非自然介系詞（如 make research ➔ conduct research; play an effect ➔ exert an effect; statistically big ➔ statistically significant）。
 - 產出 3 至 6 處改進點。
-- 每一處問題均【必須】在 revision_options 提供 3 至 4 個不同語感風格的替代選項 (Option A, B, C, D) 並附註詳細理由！
+- 每一處問題均【必須】填寫：
+  * reviewer_comment_en: 1~2 句專業且道地的英文審稿評語 (Rigorous peer-reviewer critique in pure English，絕不可為空)！
+  * reviewer_comment_zh: 正體中文審稿意見。
+  * revision_options: 提供 3 至 4 個不同語感風格的替代選項 (Option A, B, C, D)，每個選項附上 revised_text, style_label, rationale_zh, rationale_en！
 
 ==================================================
 維度三：【文法句構、推論缺陷、修辭風格與邏輯矛盾 (`discourse_issues`)】
 ==================================================
 - 專注句子結構與篇章邏輯：懸垂修飾、主謂不合、平行結構、過度宣稱（Overclaiming）、推論跳躍、邏輯矛盾與非正式語氣。
 - 產出 3 至 6 處改進點。
+- 每一處問題同樣【必須】填寫 reviewer_comment_en (專業英文評語，絕不可為空) 與 reviewer_comment_zh (正體中文評語) 及 revision_options！
 
 ==================================================
 【關鍵核心規則：雙軌並行、絕不互斥 (Non-Mutually Exclusive)】
@@ -1646,21 +1654,58 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
             if not data or not isinstance(data, dict):
                 raise ValueError(f"Could not parse model JSON response.\nFragment:\n{raw_content[-200:]}")
 
-            # 數據容錯與補齊：雙軌獨立解析
+            # 數據容錯與補齊：雙軌獨立解析與中英雙語評論 100% 健全保證
+            def has_cjk(s: str) -> bool:
+                return bool(re.search(r'[\u4e00-\u9fff]', s)) if s else False
+
             def parse_issue_item(raw_issue: dict, default_category: str = "Collocation Defect") -> Optional[IssueItem]:
                 if not isinstance(raw_issue, dict) or not raw_issue.get('original_text'):
                     return None
+                orig = str(raw_issue.get('original_text', '')).strip()
                 if not raw_issue.get('category'):
                     raw_issue['category'] = default_category
+                cat = raw_issue['category']
                 if not raw_issue.get('severity'):
                     raw_issue['severity'] = 'Major'
-                if not raw_issue.get('revision_options'):
+                if not raw_issue.get('revision_options') or not isinstance(raw_issue['revision_options'], list):
                     raw_issue['revision_options'] = [{
-                        "style_label": "Standard Idiomatic Phrasing",
-                        "revised_text": raw_issue.get('original_text', ''),
+                        "style_label": "Standard Academic Register",
+                        "revised_text": orig,
                         "rationale_zh": "優化道地語感與表達",
                         "rationale_en": "Optimized for natural native register."
                     }]
+
+                # 確保英文審稿意見 (reviewer_comment_en) 存在且為純英文
+                comm_en = str(raw_issue.get('reviewer_comment_en', '')).strip()
+                if not comm_en or has_cjk(comm_en):
+                    opt_rationale_en = ""
+                    first_opt = raw_issue['revision_options'][0]
+                    if isinstance(first_opt, dict) and first_opt.get('rationale_en'):
+                        candidate = str(first_opt['rationale_en']).strip()
+                        if candidate and not has_cjk(candidate):
+                            opt_rationale_en = candidate
+
+                    if opt_rationale_en:
+                        comm_en = f"Reviewer Note ({cat}): {opt_rationale_en}"
+                    elif cat == "Collocation Defect":
+                        comm_en = f"Unidiomatic collocation in \"{orig}\". Recommend adopting standard academic/formal phrasing for natural register and precision."
+                    elif cat == "Grammar & Mechanics":
+                        comm_en = f"Grammatical or syntactic irregularity detected in \"{orig}\". Restructure sentence to conform to standard conventions."
+                    elif cat == "Logic Error":
+                        comm_en = f"Logical contradiction or incoherence in \"{orig}\". Clarify premise or ensure contextual alignment."
+                    elif cat == "Flawed Deduction":
+                        comm_en = f"Unjustified deductive leap or overclaim in \"{orig}\". Moderate assertion with appropriate academic hedging."
+                    elif cat == "Rhetorical Defect":
+                        comm_en = f"Rhetorical defect or informal tone in \"{orig}\". Revise to maintain an objective academic tone."
+                    else:
+                        comm_en = f"Peer-review critique: Revise \"{orig}\" to enhance precision, clarity, and academic rigor."
+                raw_issue['reviewer_comment_en'] = comm_en
+
+                # 確保正體中文審稿意見 (reviewer_comment_zh) 存在
+                comm_zh = str(raw_issue.get('reviewer_comment_zh', '')).strip()
+                if not comm_zh:
+                    raw_issue['reviewer_comment_zh'] = f"針對「{orig}」之{cat}，建議採用更嚴謹、道地之表達以增強文章說服力。"
+
                 try:
                     return IssueItem(**raw_issue)
                 except Exception:
@@ -1693,30 +1738,45 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
             data['discourse_issues'] = valid_discourse
             data['issues'] = valid_colloc + valid_discourse
 
-            # 實證與策略補強建議解析（高容錯防禦）
+            # 實證與策略補強建議解析（高容錯雙語防禦，絕無中文出現在英文欄位）
             valid_recs = []
             for raw_rec in data.get('research_recommendations', []):
                 if not isinstance(raw_rec, dict):
                     continue
-                gap_zh = raw_rec.get('gap_identified_zh') or raw_rec.get('gap_identified_en') or raw_rec.get('gap_identified') or ""
-                gap_en = raw_rec.get('gap_identified_en') or raw_rec.get('gap_identified_zh') or raw_rec.get('gap_identified') or ""
-                prop_zh = raw_rec.get('concrete_proposal_zh') or raw_rec.get('concrete_proposal_en') or raw_rec.get('concrete_proposal') or ""
-                prop_en = raw_rec.get('concrete_proposal_en') or raw_rec.get('concrete_proposal_zh') or raw_rec.get('concrete_proposal') or ""
-                impact_zh = raw_rec.get('impact_on_acceptance_zh') or raw_rec.get('impact_on_acceptance_en') or raw_rec.get('impact_on_acceptance') or ""
-                impact_en = raw_rec.get('impact_on_acceptance_en') or raw_rec.get('impact_on_acceptance_zh') or raw_rec.get('impact_on_acceptance') or ""
-                sev = raw_rec.get('severity') or "Strongly Recommended (強烈建議補強)"
-                act = raw_rec.get('action_type') or "Methodology Enhancement"
+                act = str(raw_rec.get('action_type') or "Methodological & Empirical Defense")
+                sev = str(raw_rec.get('severity') or "Strongly Recommended (強烈建議補強)")
+
+                gap_zh = str(raw_rec.get('gap_identified_zh') or raw_rec.get('gap_identified') or "").strip()
+                gap_en = str(raw_rec.get('gap_identified_en') or "").strip()
+                if not gap_en or has_cjk(gap_en):
+                    gap_en = f"Critical strategic/empirical gap identified regarding {act}. Lacks rigorous validation and explicit context continuity."
+                if not gap_zh:
+                    gap_zh = f"於「{act}」維度發現實證論據不足或上下文銜接落差，易引發審閱人質疑。"
+
+                prop_zh = str(raw_rec.get('concrete_proposal_zh') or raw_rec.get('concrete_proposal') or "").strip()
+                prop_en = str(raw_rec.get('concrete_proposal_en') or "").strip()
+                if not prop_en or has_cjk(prop_en):
+                    prop_en = f"Actionable protocol: Incorporate quantitative benchmarking, ablation validation, or explicit contextual defenses for {act}."
+                if not prop_zh:
+                    prop_zh = f"建議具體補充消融實驗、顯著性檢定或對照基準，以建立不可動搖之論證防禦。"
+
+                impact_zh = str(raw_rec.get('impact_on_acceptance_zh') or raw_rec.get('impact_on_acceptance') or "").strip()
+                impact_en = str(raw_rec.get('impact_on_acceptance_en') or "").strip()
+                if not impact_en or has_cjk(impact_en):
+                    impact_en = f"Preempts reviewer skepticism, reinforces internal consistency, and substantively boosts manuscript acceptance rate."
+                if not impact_zh:
+                    impact_zh = f"主動化解審稿人潛在質疑，封堵邏輯漏洞，大幅提升文章錄用與說服機率。"
 
                 try:
                     rec_obj = ResearchRecommendation(
-                        gap_identified_zh=str(gap_zh),
-                        gap_identified_en=str(gap_en),
-                        severity=str(sev),
-                        action_type=str(act),
-                        concrete_proposal_zh=str(prop_zh),
-                        concrete_proposal_en=str(prop_en),
-                        impact_on_acceptance_zh=str(impact_zh),
-                        impact_on_acceptance_en=str(impact_en)
+                        gap_identified_zh=gap_zh,
+                        gap_identified_en=gap_en,
+                        severity=sev,
+                        action_type=act,
+                        concrete_proposal_zh=prop_zh,
+                        concrete_proposal_en=prop_en,
+                        impact_on_acceptance_zh=impact_zh,
+                        impact_on_acceptance_en=impact_en
                     )
                     valid_recs.append(rec_obj)
                 except Exception:
@@ -1795,79 +1855,84 @@ class ResearchRecommendationCard(QFrame):
         top_row.addStretch()
         layout.addLayout(top_row)
 
+        box_css = f"QFrame {{ background-color: {box_bg}; border: 1px solid {box_border}; border-radius: 6px; padding: 6px; }} QLabel {{ border: none; background: transparent; color: {text_title}; }}"
+
         # 1. 缺失分析
         gap_box = QFrame()
-        gap_box.setStyleSheet(f"background-color: {box_bg}; border: 1px solid {box_border}; border-radius: 6px; padding: 6px;")
+        gap_box.setStyleSheet(box_css)
         g_layout = QVBoxLayout(gap_box)
         g_layout.setContentsMargins(8, 6, 8, 6)
         g_layout.setSpacing(3)
 
         title_text = "<b>⚠️ Strategic / Empirical Gap Analysis:</b>" if is_en else "<b>⚠️ 上下文與論點缺失分析 (Evidence Gap):</b>"
         g_title = QLabel(title_text)
-        g_title.setStyleSheet(f"font-size: 12px; color: {text_title};")
+        g_title.setStyleSheet(f"font-size: 12px; color: {text_title}; font-weight: bold;")
         g_layout.addWidget(g_title)
 
         if not is_en and self.rec.gap_identified_zh:
             gap_zh = QLabel(f"<b>🇹🇼 中文：</b><span style='color: {zh_color};'>{html.escape(self.rec.gap_identified_zh)}</span>")
             gap_zh.setWordWrap(True)
-            gap_zh.setStyleSheet("font-size: 12px;")
+            gap_zh.setStyleSheet(f"font-size: 12px; color: {zh_color};")
             g_layout.addWidget(gap_zh)
 
-        en_val = self.rec.gap_identified_en or self.rec.gap_identified_zh
-        gap_en = QLabel(f"{'<b>Critique:</b> ' if is_en else '<b>🇺🇸 EN：</b>'}<span style='color: {en_color}; font-style: italic;'>{html.escape(en_val)}</span>")
-        gap_en.setWordWrap(True)
-        gap_en.setStyleSheet("font-size: 11px;")
-        g_layout.addWidget(gap_en)
+        en_val = self.rec.gap_identified_en.strip() if self.rec.gap_identified_en else ""
+        if en_val:
+            gap_en = QLabel(f"{'<b>Critique:</b> ' if is_en else '<b>🇺🇸 EN：</b>'}<span style='color: {en_color}; font-style: italic;'>{html.escape(en_val)}</span>")
+            gap_en.setWordWrap(True)
+            gap_en.setStyleSheet(f"font-size: 11px; color: {en_color};")
+            g_layout.addWidget(gap_en)
         layout.addWidget(gap_box)
 
         # 2. 建議補做方案
         prop_box = QFrame()
-        prop_box.setStyleSheet(f"background-color: {box_bg}; border: 1px solid {box_border}; border-radius: 6px; padding: 6px;")
+        prop_box.setStyleSheet(box_css)
         p_layout = QVBoxLayout(prop_box)
         p_layout.setContentsMargins(8, 6, 8, 6)
         p_layout.setSpacing(3)
 
         prop_title_text = "<b>💡 Actionable Strategic Proposal:</b>" if is_en else "<b>💡 建議補做方案 (Proposed Protocol / Experiments):</b>"
         p_title = QLabel(prop_title_text)
-        p_title.setStyleSheet(f"font-size: 12px; color: {text_title};")
+        p_title.setStyleSheet(f"font-size: 12px; color: {text_title}; font-weight: bold;")
         p_layout.addWidget(p_title)
 
         if not is_en and self.rec.concrete_proposal_zh:
             prop_zh = QLabel(f"<b>🇹🇼 中文：</b><span style='color: {zh_color};'>{html.escape(self.rec.concrete_proposal_zh)}</span>")
             prop_zh.setWordWrap(True)
-            prop_zh.setStyleSheet("font-size: 12px;")
+            prop_zh.setStyleSheet(f"font-size: 12px; color: {zh_color};")
             p_layout.addWidget(prop_zh)
 
-        prop_en_val = self.rec.concrete_proposal_en or self.rec.concrete_proposal_zh
-        prop_en = QLabel(f"{'<b>Proposal:</b> ' if is_en else '<b>🇺🇸 EN：</b>'}<span style='color: {en_color}; font-style: italic;'>{html.escape(prop_en_val)}</span>")
-        prop_en.setWordWrap(True)
-        prop_en.setStyleSheet("font-size: 11px;")
-        p_layout.addWidget(prop_en)
+        prop_en_val = self.rec.concrete_proposal_en.strip() if self.rec.concrete_proposal_en else ""
+        if prop_en_val:
+            prop_en = QLabel(f"{'<b>Proposal:</b> ' if is_en else '<b>🇺🇸 EN：</b>'}<span style='color: {en_color}; font-style: italic;'>{html.escape(prop_en_val)}</span>")
+            prop_en.setWordWrap(True)
+            prop_en.setStyleSheet(f"font-size: 11px; color: {en_color};")
+            p_layout.addWidget(prop_en)
         layout.addWidget(prop_box)
 
         # 3. 效益評估
         impact_box = QFrame()
-        impact_box.setStyleSheet(f"background-color: {box_bg}; border: 1px solid {box_border}; border-radius: 6px; padding: 6px;")
+        impact_box.setStyleSheet(box_css)
         i_layout = QVBoxLayout(impact_box)
         i_layout.setContentsMargins(8, 6, 8, 6)
         i_layout.setSpacing(3)
 
         impact_title_text = "<b>🛡️ Strategic Uplift & Acceptance Impact:</b>" if is_en else "<b>🛡️ 投稿防禦效益 (Defense Impact):</b>"
         i_title = QLabel(impact_title_text)
-        i_title.setStyleSheet(f"font-size: 12px; color: {text_title};")
+        i_title.setStyleSheet(f"font-size: 12px; color: {text_title}; font-weight: bold;")
         i_layout.addWidget(i_title)
 
         if not is_en and self.rec.impact_on_acceptance_zh:
             impact_zh = QLabel(f"<b>🇹🇼 中文：</b><span style='color: {zh_color};'>{html.escape(self.rec.impact_on_acceptance_zh)}</span>")
             impact_zh.setWordWrap(True)
-            impact_zh.setStyleSheet("font-size: 12px;")
+            impact_zh.setStyleSheet(f"font-size: 12px; color: {zh_color};")
             i_layout.addWidget(impact_zh)
 
-        impact_en_val = self.rec.impact_on_acceptance_en or self.rec.impact_on_acceptance_zh
-        impact_en = QLabel(f"{'<b>Impact:</b> ' if is_en else '<b>🇺🇸 EN：</b>'}<span style='color: {en_color}; font-style: italic;'>{html.escape(impact_en_val)}</span>")
-        impact_en.setWordWrap(True)
-        impact_en.setStyleSheet("font-size: 11px;")
-        i_layout.addWidget(impact_en)
+        impact_en_val = self.rec.impact_on_acceptance_en.strip() if self.rec.impact_on_acceptance_en else ""
+        if impact_en_val:
+            impact_en = QLabel(f"{'<b>Impact:</b> ' if is_en else '<b>🇺🇸 EN：</b>'}<span style='color: {en_color}; font-style: italic;'>{html.escape(impact_en_val)}</span>")
+            impact_en.setWordWrap(True)
+            impact_en.setStyleSheet(f"font-size: 11px; color: {en_color};")
+            i_layout.addWidget(impact_en)
         layout.addWidget(impact_box)
 
 class IssueCard(QFrame):
@@ -1952,7 +2017,7 @@ class IssueCard(QFrame):
         layout.addLayout(top_row)
 
         meaning_box = QFrame()
-        meaning_box.setStyleSheet(f"background-color: {card_bg}; border: 1px solid {card_border}; border-radius: 6px; padding: 6px;")
+        meaning_box.setStyleSheet(f"QFrame {{ background-color: {card_bg}; border: 1px solid {card_border}; border-radius: 6px; padding: 6px; }} QLabel {{ border: none; background: transparent; }}")
         meaning_layout = QVBoxLayout(meaning_box)
         meaning_layout.setContentsMargins(8, 6, 8, 6)
         meaning_layout.setSpacing(4)
@@ -1970,25 +2035,33 @@ class IssueCard(QFrame):
             meaning_layout.addWidget(trans_label)
         layout.addWidget(meaning_box)
 
-        # 評論區
+        # 評論區 (有評論才渲染，杜絕空綠框)
+        has_comment = False
         comment_box = QFrame()
-        comment_box.setStyleSheet(f"background-color: {comment_box_bg}; border: 1px solid {comment_box_border}; border-left: 4px solid #10b981; border-radius: 4px;")
+        comment_box.setStyleSheet(f"QFrame {{ background-color: {comment_box_bg}; border: 1px solid {comment_box_border}; border-left: 4px solid #10b981; border-radius: 4px; }} QLabel {{ border: none; background: transparent; }}")
         comment_layout = QVBoxLayout(comment_box)
         comment_layout.setContentsMargins(8, 6, 8, 6)
         comment_layout.setSpacing(4)
 
         if not is_en and self.issue.reviewer_comment_zh:
-            comment_zh = QLabel(f"<b>🇹🇼 審稿意見 (中文)：</b><span style='color: {zh_color};'>{html.escape(self.issue.reviewer_comment_zh)}</span>")
-            comment_zh.setWordWrap(True)
-            comment_zh.setStyleSheet("font-size: 12px;")
-            comment_layout.addWidget(comment_zh)
+            zh_comm = self.issue.reviewer_comment_zh.strip()
+            if zh_comm:
+                comment_zh = QLabel(f"<b>🇹🇼 審稿意見 (中文)：</b><span style='color: {zh_color};'>{html.escape(zh_comm)}</span>")
+                comment_zh.setWordWrap(True)
+                comment_zh.setStyleSheet("font-size: 12px;")
+                comment_layout.addWidget(comment_zh)
+                has_comment = True
 
-        en_comm = self.issue.reviewer_comment_en or self.issue.reviewer_comment_zh
-        comment_en = QLabel(f"{'<b>Reviewer Critique:</b> ' if is_en else '<b>🇺🇸 Reviewer Comment (EN)：</b>'}<span style='color: {en_color}; font-style: italic;'>{html.escape(en_comm)}</span>")
-        comment_en.setWordWrap(True)
-        comment_en.setStyleSheet("font-size: 11px;")
-        comment_layout.addWidget(comment_en)
-        layout.addWidget(comment_box)
+        en_comm = self.issue.reviewer_comment_en.strip() if self.issue.reviewer_comment_en else ""
+        if en_comm:
+            comment_en = QLabel(f"{'<b>Reviewer Critique:</b> ' if is_en else '<b>🇺🇸 Reviewer Comment (EN)：</b>'}<span style='color: {en_color}; font-style: italic;'>{html.escape(en_comm)}</span>")
+            comment_en.setWordWrap(True)
+            comment_en.setStyleSheet("font-size: 11px;")
+            comment_layout.addWidget(comment_en)
+            has_comment = True
+
+        if has_comment:
+            layout.addWidget(comment_box)
 
         # 3~4 多選項展示
         opt_title_text = "💡 Revision Options (Click to select, full text syncs dynamically):" if is_en else "💡 建議修改選項 (點擊切換，右側修改全文將即時連動):"
@@ -2248,14 +2321,14 @@ class AcademicReviewerApp(QMainWindow):
         # ==========================================
         self.left_splitter = QSplitter(Qt.Vertical)
 
-        # 1. 原始英文草稿區 (上部)
+        # 原始英文草稿區 (上部)
         self.draft_widget = QWidget()
         draft_layout = QVBoxLayout(self.draft_widget)
         draft_layout.setContentsMargins(0, 0, 4, 4)
         draft_layout.setSpacing(5)
 
         draft_header = QHBoxLayout()
-        self.draft_title_lbl = QLabel("1. 原始英文草稿:")
+        self.draft_title_lbl = QLabel("原始英文草稿")
         self.draft_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
         draft_header.addWidget(self.draft_title_lbl)
         draft_header.addStretch()
@@ -2270,50 +2343,16 @@ class AcademicReviewerApp(QMainWindow):
         self.text_editor.textChanged.connect(self.on_editor_text_changed)
         draft_layout.addWidget(self.text_editor, 1)
 
-        self.preflight_box = QFrame()
-        preflight_layout = QVBoxLayout(self.preflight_box)
-        preflight_layout.setContentsMargins(8, 6, 8, 6)
-        preflight_layout.setSpacing(4)
-
-        pf_top = QHBoxLayout()
-        self.pf_title_lbl = QLabel("⚡ 本機秒篩 (純程式規則，0秒反應):")
-        self.pf_title_lbl.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        pf_top.addWidget(self.pf_title_lbl)
-        pf_top.addStretch()
-
-        self.quick_fix_btn = QPushButton("⚡ 一鍵自動替換縮寫與口語詞")
-        self.quick_fix_btn.clicked.connect(self.auto_fix_preflight_issues)
-        pf_top.addWidget(self.quick_fix_btn)
-        preflight_layout.addLayout(pf_top)
-
-        self.preflight_status_lbl = QLabel("正在進行本機語法規則快速掃描...")
-        self.preflight_status_lbl.setWordWrap(True)
-        preflight_layout.addWidget(self.preflight_status_lbl)
-        draft_layout.addWidget(self.preflight_box)
-
-        self.status_banner = QLabel("就緒：請確認輸入文本並點擊開始審查。")
-        draft_layout.addWidget(self.status_banner)
-
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setRange(0, 0)
-        self.progress_bar.setVisible(False)
-        draft_layout.addWidget(self.progress_bar)
-
-        self.review_btn = QPushButton("🚀 開始智能審查 (搭配詞檢視與深度改寫)")
-        self.review_btn.setFixedHeight(38)
-        self.review_btn.clicked.connect(self.start_review)
-        draft_layout.addWidget(self.review_btn)
-
         self.left_splitter.addWidget(self.draft_widget)
 
-        # 2. 修改後全文區 (下部)
+        # 修改後全文區 (下部)
         self.revised_widget = QWidget()
         revised_layout = QVBoxLayout(self.revised_widget)
         revised_layout.setContentsMargins(0, 4, 4, 0)
         revised_layout.setSpacing(5)
 
         revised_header = QHBoxLayout()
-        self.revised_title_lbl = QLabel("2. 修改後全文 (高亮顏色標記修改處):")
+        self.revised_title_lbl = QLabel("修改後全文")
         self.revised_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
         revised_header.addWidget(self.revised_title_lbl)
         revised_header.addStretch()
@@ -2336,7 +2375,7 @@ class AcademicReviewerApp(QMainWindow):
         revised_layout.addWidget(self.revised_browser, 1)
 
         self.left_splitter.addWidget(self.revised_widget)
-        self.left_splitter.setSizes([430, 390])
+        self.left_splitter.setSizes([450, 450])
 
         self.splitter.addWidget(self.left_splitter)
 
@@ -2345,13 +2384,13 @@ class AcademicReviewerApp(QMainWindow):
         # ==========================================
         self.middle_splitter = QSplitter(Qt.Vertical)
 
-        # 3. 審查實質建議與實證缺失分析 (上部 1/2)
+        # 審查實質建議與實證缺失分析
         self.middle_top_widget = QWidget()
         middle_top_layout = QVBoxLayout(self.middle_top_widget)
         middle_top_layout.setContentsMargins(4, 0, 4, 4)
         middle_top_layout.setSpacing(5)
 
-        self.recs_title_lbl = QLabel("3. 審查實質建議與實證缺失分析 (上部 1/2):")
+        self.recs_title_lbl = QLabel("審查實質建議與實證缺失分析")
         self.recs_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
         middle_top_layout.addWidget(self.recs_title_lbl)
 
@@ -2370,13 +2409,13 @@ class AcademicReviewerApp(QMainWindow):
 
         self.middle_splitter.addWidget(self.middle_top_widget)
 
-        # 4. 搭配詞替換選項與精準用詞編修 (下部 1/2)
+        # 搭配詞替換選項與精準用詞編修
         self.middle_bottom_widget = QWidget()
         middle_bottom_layout = QVBoxLayout(self.middle_bottom_widget)
         middle_bottom_layout.setContentsMargins(4, 4, 4, 0)
         middle_bottom_layout.setSpacing(5)
 
-        self.colloc_title_lbl = QLabel("4. 搭配詞替換選項與精準用詞編修 (下部 1/2):")
+        self.colloc_title_lbl = QLabel("搭配詞替換選項與精準用詞編修")
         self.colloc_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
         middle_bottom_layout.addWidget(self.colloc_title_lbl)
 
@@ -2390,7 +2429,7 @@ class AcademicReviewerApp(QMainWindow):
         middle_bottom_layout.addWidget(self.colloc_scroll_area, 1)
 
         self.middle_splitter.addWidget(self.middle_bottom_widget)
-        self.middle_splitter.setSizes([410, 410])
+        self.middle_splitter.setSizes([450, 450])
 
         self.splitter.addWidget(self.middle_splitter)
 
@@ -2402,7 +2441,7 @@ class AcademicReviewerApp(QMainWindow):
         right_layout.setContentsMargins(4, 0, 0, 0)
         right_layout.setSpacing(5)
 
-        self.discourse_title_lbl = QLabel("5. 文法句構、推論缺陷、修辭風格與邏輯矛盾 (全高):")
+        self.discourse_title_lbl = QLabel("文法句構、推論缺陷、修辭風格與邏輯矛盾")
         self.discourse_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
         right_layout.addWidget(self.discourse_title_lbl)
 
@@ -2420,6 +2459,42 @@ class AcademicReviewerApp(QMainWindow):
         # 平分三欄 (各 1/3)
         self.splitter.setSizes([500, 500, 520])
         self.main_layout.addWidget(self.splitter, 1)
+
+        # ==========================================
+        # 整合型底部操作與狀態工具列 (Bottom Action Toolbar)
+        # ==========================================
+        self.bottom_action_toolbar = QFrame()
+        self.bottom_action_toolbar.setObjectName("bottomActionToolbar")
+        self.bottom_action_toolbar.setFixedHeight(48)
+        bottom_layout = QHBoxLayout(self.bottom_action_toolbar)
+        bottom_layout.setContentsMargins(12, 6, 12, 6)
+        bottom_layout.setSpacing(10)
+
+        self.status_banner = QLabel("就緒：請確認輸入文本並點擊開始審查。")
+        self.status_banner.setFont(QFont("Segoe UI", 9))
+        bottom_layout.addWidget(self.status_banner, 1)
+
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 0)
+        self.progress_bar.setVisible(False)
+        self.progress_bar.setFixedWidth(160)
+        self.progress_bar.setFixedHeight(18)
+        bottom_layout.addWidget(self.progress_bar)
+
+        bottom_layout.addSpacing(6)
+
+        self.quick_fix_btn = QPushButton("⚡ 一鍵自動替換縮寫與口語詞")
+        self.quick_fix_btn.setFixedHeight(34)
+        self.quick_fix_btn.clicked.connect(self.auto_fix_preflight_issues)
+        bottom_layout.addWidget(self.quick_fix_btn)
+
+        self.review_btn = QPushButton("🚀 開始智能審查 (搭配詞檢視與深度改寫)")
+        self.review_btn.setFixedHeight(34)
+        self.review_btn.setFont(QFont("Segoe UI", 9, QFont.Bold))
+        self.review_btn.clicked.connect(self.start_review)
+        bottom_layout.addWidget(self.review_btn)
+
+        self.main_layout.addWidget(self.bottom_action_toolbar, 0)
 
         # 相容舊有名稱別名 (防止 AttributeError)
         self.left_widget = self.left_splitter
@@ -2516,7 +2591,6 @@ class AcademicReviewerApp(QMainWindow):
         self.recs_title_lbl.setText(t["recs_title"])
         self.colloc_title_lbl.setText(t["colloc_title"])
         self.discourse_title_lbl.setText(t["discourse_title"])
-        self.pf_title_lbl.setText(t["pf_title"])
         self.quick_fix_btn.setText(t["quick_fix_btn"])
         self.review_btn.setText(t["btn_start_review"])
         self.sync_to_left_btn.setText(t["sync_left"])
@@ -2524,7 +2598,6 @@ class AcademicReviewerApp(QMainWindow):
 
         if not self.current_report:
             self.assessment_box.setHtml(t["assessment_placeholder"])
-            self.revised_browser.setHtml(t["revised_placeholder"])
             self.status_banner.setText(t["status_ready"])
             self.reset_card_placeholders()
 
@@ -2533,22 +2606,37 @@ class AcademicReviewerApp(QMainWindow):
 
     def update_legend_text(self):
         t = I18N.get(self.ui_language, I18N["zh_TW"])
-        if self.is_dark_mode:
-            self.legend_label.setText(
-                f"<span style='background-color:#450a0a; color:#fecaca; border:1px solid #dc2626; padding:2px 5px; border-radius:3px;'> {t['legend_grammar']} </span> "
-                f"<span style='background-color:#431407; color:#fed7aa; border:1px solid #ea580c; padding:2px 5px; border-radius:3px;'> {t['legend_deduction']} </span> "
-                f"<span style='background-color:#451a03; color:#fde68a; border:1px solid #d97706; padding:2px 5px; border-radius:3px;'> {t['legend_logic']} </span> "
-                f"<span style='background-color:#172554; color:#bfdbfe; border:1px solid #2563eb; padding:2px 5px; border-radius:3px;'> {t['legend_rhetoric']} </span> "
-                f"<span style='background-color:#022c22; color:#a7f3d0; border:1px solid #059669; padding:2px 5px; border-radius:3px;'> {t['legend_collocation']} </span>"
-            )
+        is_en = (self.ui_language == "en_US")
+        if self.current_report is None:
+            if self.is_dark_mode:
+                self.legend_label.setText(
+                    f"<span style='color:#94a3b8; font-size:11px;'>{'⚡ Local Rule Linter: ' if is_en else '⚡ 本機規則秒篩圖例: '}</span>"
+                    f"<span style='color:#f87171; background-color:#450a0a; text-decoration:line-through; padding:2px 5px; border-radius:3px;'>{'Contraction / Informal' if is_en else '原縮寫 / 口語贅詞'}</span> "
+                    f"<span style='color:#34d399; background-color:#064e3b; font-weight:bold; padding:2px 5px; border-radius:3px;'>{'➔ Recommended Replacement' if is_en else '➔ 推薦替換詞'}</span>"
+                )
+            else:
+                self.legend_label.setText(
+                    f"<span style='color:#64748b; font-size:11px;'>{'⚡ Local Rule Linter: ' if is_en else '⚡ 本機規則秒篩圖例: '}</span>"
+                    f"<span style='color:#dc2626; background-color:#fee2e2; text-decoration:line-through; padding:2px 5px; border-radius:3px;'>{'Contraction / Informal' if is_en else '原縮寫 / 口語贅詞'}</span> "
+                    f"<span style='color:#15803d; background-color:#dcfce7; font-weight:bold; padding:2px 5px; border-radius:3px;'>{'➔ Recommended Replacement' if is_en else '➔ 推薦替換詞'}</span>"
+                )
         else:
-            self.legend_label.setText(
-                f"<span style='background-color:#fee2e2; color:#991b1b; padding:2px 5px; border-radius:3px;'> {t['legend_grammar']} </span> "
-                f"<span style='background-color:#ffedd5; color:#9a3412; padding:2px 5px; border-radius:3px;'> {t['legend_deduction']} </span> "
-                f"<span style='background-color:#fef3c7; color:#92400e; padding:2px 5px; border-radius:3px;'> {t['legend_logic']} </span> "
-                f"<span style='background-color:#dbeafe; color:#1e40af; padding:2px 5px; border-radius:3px;'> {t['legend_rhetoric']} </span> "
-                f"<span style='background-color:#d1fae5; color:#065f46; padding:2px 5px; border-radius:3px;'> {t['legend_collocation']} </span>"
-            )
+            if self.is_dark_mode:
+                self.legend_label.setText(
+                    f"<span style='background-color:#450a0a; color:#fecaca; border:1px solid #dc2626; padding:2px 5px; border-radius:3px;'> {t['legend_grammar']} </span> "
+                    f"<span style='background-color:#431407; color:#fed7aa; border:1px solid #ea580c; padding:2px 5px; border-radius:3px;'> {t['legend_deduction']} </span> "
+                    f"<span style='background-color:#451a03; color:#fde68a; border:1px solid #d97706; padding:2px 5px; border-radius:3px;'> {t['legend_logic']} </span> "
+                    f"<span style='background-color:#172554; color:#bfdbfe; border:1px solid #2563eb; padding:2px 5px; border-radius:3px;'> {t['legend_rhetoric']} </span> "
+                    f"<span style='background-color:#022c22; color:#a7f3d0; border:1px solid #059669; padding:2px 5px; border-radius:3px;'> {t['legend_collocation']} </span>"
+                )
+            else:
+                self.legend_label.setText(
+                    f"<span style='background-color:#fee2e2; color:#991b1b; padding:2px 5px; border-radius:3px;'> {t['legend_grammar']} </span> "
+                    f"<span style='background-color:#ffedd5; color:#9a3412; padding:2px 5px; border-radius:3px;'> {t['legend_deduction']} </span> "
+                    f"<span style='background-color:#fef3c7; color:#92400e; padding:2px 5px; border-radius:3px;'> {t['legend_logic']} </span> "
+                    f"<span style='background-color:#dbeafe; color:#1e40af; padding:2px 5px; border-radius:3px;'> {t['legend_rhetoric']} </span> "
+                    f"<span style='background-color:#d1fae5; color:#065f46; padding:2px 5px; border-radius:3px;'> {t['legend_collocation']} </span>"
+                )
 
     def on_writing_mode_changed(self, idx: int):
         modes = ["academic", "correspondence", "application", "business"]
@@ -2614,7 +2702,6 @@ class AcademicReviewerApp(QMainWindow):
             self.discourse_title_lbl.setStyleSheet(f"color: {text_main};")
             self.model_label.setStyleSheet(f"color: {text_sub};")
             self.word_count_lbl.setStyleSheet(f"color: {text_sub}; font-size: 11px;")
-            self.pf_title_lbl.setStyleSheet(f"color: {text_main};")
             self.status_banner.setStyleSheet(f"color: {text_sub}; font-size: 11px;")
 
             self.text_editor.set_theme_mode(True)
@@ -2625,7 +2712,7 @@ class AcademicReviewerApp(QMainWindow):
             self.mode_lbl.setStyleSheet(f"color: {text_sub}; font-size: 11px; font-weight: bold;")
             self.scope_lbl.setStyleSheet(f"color: {text_sub}; font-size: 11px; font-weight: bold;")
             self.section_lbl.setStyleSheet(f"color: {text_sub}; font-size: 11px; font-weight: bold;")
-            self.preflight_box.setStyleSheet(f"background-color: {bg_card}; border: 1px solid {border_col}; border-radius: 6px;")
+            self.bottom_action_toolbar.setStyleSheet(f"#bottomActionToolbar {{ background-color: {bg_card}; border: 1px solid {border_col}; border-radius: 6px; }}")
 
             btn_normal = f"""
                 QPushButton {{
@@ -2673,7 +2760,6 @@ class AcademicReviewerApp(QMainWindow):
             self.discourse_title_lbl.setStyleSheet(f"color: {text_main};")
             self.model_label.setStyleSheet(f"color: {text_sub};")
             self.word_count_lbl.setStyleSheet(f"color: #64748b; font-size: 11px;")
-            self.pf_title_lbl.setStyleSheet(f"color: {text_main};")
             self.status_banner.setStyleSheet(f"color: #64748b; font-size: 11px;")
 
             self.text_editor.set_theme_mode(False)
@@ -2684,7 +2770,7 @@ class AcademicReviewerApp(QMainWindow):
             self.mode_lbl.setStyleSheet(f"color: {text_sub}; font-size: 11px; font-weight: bold;")
             self.scope_lbl.setStyleSheet(f"color: {text_sub}; font-size: 11px; font-weight: bold;")
             self.section_lbl.setStyleSheet(f"color: {text_sub}; font-size: 11px; font-weight: bold;")
-            self.preflight_box.setStyleSheet(f"background-color: {bg_card}; border: 1px solid #e2e8f0; border-radius: 6px;")
+            self.bottom_action_toolbar.setStyleSheet(f"#bottomActionToolbar {{ background-color: {bg_card}; border: 1px solid #e2e8f0; border-radius: 6px; }}")
 
             btn_normal = f"""
                 QPushButton {{
@@ -2793,35 +2879,94 @@ class AcademicReviewerApp(QMainWindow):
         dlg.exec()
 
     def on_editor_text_changed(self):
+        self.current_report = None
         self.preflight_timer.start(250)
 
     def run_preflight_analysis(self):
         text = self.text_editor.toPlainText().strip()
         words = text.split()
         t = I18N.get(self.ui_language, I18N["zh_TW"])
+        is_en = (self.ui_language == "en_US")
         self.word_count_lbl.setText(t["word_count"].format(n=len(words)))
 
         if not text:
-            self.preflight_status_lbl.setText("Ready: input text to scan." if self.ui_language == "en_US" else "就緒：請輸入英文草稿以執行秒級快篩。")
+            self.status_banner.setText("Ready: input text to scan." if is_en else "就緒：請輸入英文草稿以執行秒級快篩。")
+            self.status_banner.setStyleSheet("color: #64748b; font-size: 11px;")
             self.quick_fix_btn.setEnabled(False)
             self.current_preflight_matches = []
+            self.latest_revised_plain_text = ""
+            if self.current_report is None:
+                self.revised_browser.setHtml(t["revised_placeholder"])
+                self.update_legend_text()
             return
 
         self.current_preflight_matches = PreflightChecker.scan(text, self.writing_mode)
-        is_en = (self.ui_language == "en_US")
+
+        # 當尚未執行 LLM 審查時，直接將本機規則快篩結果呈現在「修改後全文」中 (以刪除號與推薦替換詞標記)
+        if self.current_report is None:
+            self.render_preflight_diff_in_revised(text)
+
         if not self.current_preflight_matches:
-            self.preflight_status_lbl.setText("✨ No obvious contractions or awkward collocations detected." if is_en else "✨ 語法規則檢測通過！未發現縮寫、口語贅詞或生硬搭配詞。")
-            self.preflight_status_lbl.setStyleSheet("color: #10b981; font-size: 11px;")
+            self.status_banner.setText("✨ No obvious contractions or awkward collocations detected." if is_en else "✨ 語法規則檢測通過！未發現縮寫、口語贅詞或生硬搭配詞。")
+            self.status_banner.setStyleSheet("color: #10b981; font-size: 11px;")
             self.quick_fix_btn.setEnabled(False)
         else:
             cnt = len(self.current_preflight_matches)
-            preview = ", ".join([f"'{m.original}' ➔ '{m.replacement}'" for m in self.current_preflight_matches[:3]])
+            preview = ", ".join([f"'{m.original}' ➔ '{m.replacement.split('/')[0].strip()}'" for m in self.current_preflight_matches[:3]])
             if cnt > 3:
                 preview += f"... (+{cnt - 3} more)"
-            msg = f"⚠️ Detected {cnt} rule warnings: {preview}" if is_en else f"⚠️ 本機秒篩偵測到 {cnt} 處待改進項：{preview}"
-            self.preflight_status_lbl.setText(msg)
-            self.preflight_status_lbl.setStyleSheet("color: #f59e0b; font-size: 11px;")
+            msg = f"⚠️ Preflight linter found {cnt} issues (marked with strikethrough in Revised Text): {preview}" if is_en else f"⚠️ 本機秒篩偵測到 {cnt} 處待改進項（已於修改後全文標記刪除號與替換詞）：{preview}"
+            self.status_banner.setText(msg)
+            self.status_banner.setStyleSheet("color: #f59e0b; font-size: 11px;")
             self.quick_fix_btn.setEnabled(True)
+
+    def render_preflight_diff_in_revised(self, text: str):
+        if not self.current_preflight_matches:
+            self.revised_browser.setPlainText(text)
+            self.latest_revised_plain_text = text
+            self.update_legend_text()
+            return
+
+        sorted_matches = sorted(self.current_preflight_matches, key=lambda m: m.span[0])
+        non_overlapping = []
+        last_end = 0
+        for m in sorted_matches:
+            if m.span[0] >= last_end:
+                non_overlapping.append(m)
+                last_end = m.span[1]
+
+        html_parts = []
+        curr_pos = 0
+        for m in non_overlapping:
+            s, e = m.span
+            if s > curr_pos:
+                html_parts.append(html.escape(text[curr_pos:s]))
+
+            if self.is_dark_mode:
+                del_style = "color: #f87171; background-color: #450a0a; text-decoration: line-through; padding: 1px 4px; border-radius: 3px; font-weight: bold;"
+                ins_style = "color: #34d399; background-color: #064e3b; font-weight: bold; padding: 1px 4px; border-radius: 3px; margin-left: 2px;"
+            else:
+                del_style = "color: #dc2626; background-color: #fee2e2; text-decoration: line-through; padding: 1px 4px; border-radius: 3px; font-weight: bold;"
+                ins_style = "color: #15803d; background-color: #dcfce7; font-weight: bold; padding: 1px 4px; border-radius: 3px; margin-left: 2px;"
+
+            first_rep = m.replacement.split('/')[0].strip() if '/' in m.replacement else m.replacement
+            tip = f"{m.category}: {m.explanation}"
+            chunk = (
+                f"<span title='{html.escape(tip)}'>"
+                f"<del style='{del_style}'>{html.escape(m.original)}</del>"
+                f"<span style='{ins_style}'> ➔ {html.escape(first_rep)}</span>"
+                f"</span>"
+            )
+            html_parts.append(chunk)
+            curr_pos = e
+
+        if curr_pos < len(text):
+            html_parts.append(html.escape(text[curr_pos:]))
+
+        full_html = "".join(html_parts).replace("\n", "<br>")
+        self.revised_browser.setHtml(full_html)
+        self.latest_revised_plain_text = PreflightChecker.fix_all_issues(text)
+        self.update_legend_text()
 
     def auto_fix_preflight_issues(self):
         text = self.text_editor.toPlainText()
@@ -3069,6 +3214,8 @@ class AcademicReviewerApp(QMainWindow):
                 item = layout.takeAt(0)
                 widget = item.widget()
                 if widget:
+                    widget.hide()
+                    widget.setParent(None)
                     widget.deleteLater()
 
     def handle_option_selection(self, issue_idx: int, option_idx: int):

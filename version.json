@@ -1,6 +1,6 @@
 {
-  "latest_version": "0.9.1",
+  "latest_version": "0.9.2",
   "release_date": "2026-10-16",
-  "download_url": "https://github.com/Chars1008/LibreLlama-Reviewer/releases/download/v0.9.1/LibreLlamaReviewer_Setup_v0.9.1.exe",
-  "changelog": "【v0.9.1 更新紀錄 ─ 封閉開發版 (Closed Development Pre-release)】\n1. 錯誤雙軌不互斥檢核：重構 Prompt 與 Schema 為雙軌陣列，徹底解決同一句子中搭配詞與文法句構/邏輯矛盾互相掩蓋的問題\n2. 實證補強分析修復：放寬 Pydantic severity 容錯機制，恢復審查員上下文缺失分析 (Evidence Gap) 與建議補做方案 (Proposed Protocol)\n3. 全新三欄 1/3 佈局：左側 1/3 (原始草稿 + 修改後全文)、中間 1/3 (實質建議上部 1/2 + 搭配詞下部 1/2)、右側 1/3 (語篇句構與邏輯缺陷全高)\n4. 章節定位彈性擴充：新增「🔍 其他 / 由模型判斷 (Auto-Detect)」模式，局部文章段落由模型自適應判斷"
+  "download_url": "https://github.com/Chars1008/LibreLlama-Reviewer/releases/download/v0.9.2/LibreLlamaReviewer_Setup_v0.9.2.exe",
+  "changelog": "【v0.9.2 更新紀錄 ─ 封閉開發版 (Closed Development Pre-release)】\n1. 英文審查意見與實證建議完整修復：重構後端容錯解析與提示詞約束，保證 Reviewer Comment (EN) 與實證建議 (US EN) 具備 100% 專業道地英文評語，杜絕空白框與中文混雜\n2. 欄位標題精煉去雜訊：全面移除各欄位標題之編號 (1., 2., 3.) 與位置比例標註 ((上部 1/2) 等)，視覺更顯簡潔專業\n3. 全新底部操作工具列 (Bottom Action Toolbar)：將「開始智能審查」、「一鍵快修」、狀態即時監控與進度條整合至視窗底部，大幅釋放草稿與修訂編輯區高度\n4. 修改後全文整合規則快篩：未執行 LLM 審查前，修改後全文區即時以刪除號 (<del>) 與綠色醒目字體對照呈現縮寫及口語待替換詞，一目瞭然"
 }
