@@ -90,6 +90,17 @@ class UninstallWorker(QThread):
                 cleanup_cmd = f'cmd /c ping 127.0.0.1 -n 3 >nul & rmdir /s /q "{self.install_dir}"'
                 subprocess.Popen(cleanup_cmd, shell=True, creationflags=0x08000000 if sys.platform == "win32" else 0)
 
+            # 同時清理另一候選目錄（若存在）
+            local_appdata = os.environ.get("LOCALAPPDATA", "")
+            if local_appdata:
+                for candidate_name in ["AcademicReviewer", "LibreLlamaReviewer"]:
+                    candidate_path = os.path.join(local_appdata, candidate_name)
+                    if candidate_path.lower() != self.install_dir.lower() and os.path.exists(candidate_path):
+                        try:
+                            shutil.rmtree(candidate_path, ignore_errors=True)
+                        except Exception:
+                            pass
+
             self.progress.emit(100, "解除安裝已完成！")
             self.finished.emit(True, "【LibreLlama Reviewer】已成功從此電腦完全移除。")
         except Exception as e:
@@ -206,13 +217,13 @@ def main():
         # 當前檔案路徑
         current_exe = sys.executable if getattr(sys, 'frozen', False) else os.path.abspath(__file__)
         install_dir = os.path.dirname(current_exe)
-        temp_exe = os.path.join(tempfile.gettempdir(), "LibreLlamaReviewer_uninstaller.exe")
         try:
+            temp_exe = os.path.join(tempfile.gettempdir(), "LibreLlamaReviewer_uninstaller.exe")
             shutil.copy2(current_exe, temp_exe)
             subprocess.Popen([temp_exe, "--from-temp", install_dir])
             sys.exit(0)
         except Exception:
-            # 若複製失敗，直接就地執行
+            # 若複製或跳板啟動失敗，直接就地執行
             pass
 
     win = UninstallWindow(install_dir)
