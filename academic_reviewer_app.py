@@ -2027,75 +2027,85 @@ class AcademicReviewerApp(QMainWindow):
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.main_layout = QVBoxLayout(self.central_widget)
-        self.main_layout.setContentsMargins(16, 10, 16, 12)
-        self.main_layout.setSpacing(8)
+        self.main_layout.setContentsMargins(12, 8, 12, 10)
+        self.main_layout.setSpacing(6)
 
-        # --- 頂部工具列 (Row 1) ---
-        self.toolbar_layout = QHBoxLayout()
+        # --- 整合型頂部工具列 (Unified Sleek Top Toolbar) ---
+        self.unified_toolbar = QFrame()
+        self.unified_toolbar.setObjectName("unifiedToolbar")
+        self.unified_toolbar.setFixedHeight(70)
+        self.mode_control_frame = self.unified_toolbar
+
+        toolbar_container_layout = QVBoxLayout(self.unified_toolbar)
+        toolbar_container_layout.setContentsMargins(10, 5, 10, 5)
+        toolbar_container_layout.setSpacing(4)
+
+        # Row 1: 品牌標誌、引擎模式、API設定、模型選擇、環境精靈、語系、主題、更新
+        row1_layout = QHBoxLayout()
+        row1_layout.setContentsMargins(0, 0, 0, 0)
+        row1_layout.setSpacing(6)
+
         self.title_label = QLabel("🦙 LibreLlama Reviewer")
-        self.title_label.setFont(QFont("Segoe UI", 13, QFont.Bold))
-        self.toolbar_layout.addWidget(self.title_label)
+        self.title_label.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        row1_layout.addWidget(self.title_label)
 
         self.v_badge = QLabel(f"v{APP_VERSION} (Pre-release)")
-        self.v_badge.setStyleSheet("color: #94a3b8; font-size: 11px; margin-right: 8px;")
-        self.toolbar_layout.addWidget(self.v_badge)
+        self.v_badge.setStyleSheet("color: #94a3b8; font-size: 11px; margin-right: 6px;")
+        row1_layout.addWidget(self.v_badge)
 
         self.engine_combo = QComboBox()
         self.engine_combo.addItems(["🖥️ 在地 Ollama (100% 離線隱私)", "☁️ 線上 API (DeepSeek/OpenAI/Gemini)"])
         if self.engine_mode == "api":
             self.engine_combo.setCurrentIndex(1)
         self.engine_combo.currentIndexChanged.connect(self.on_engine_mode_changed)
-        self.toolbar_layout.addWidget(self.engine_combo)
+        row1_layout.addWidget(self.engine_combo)
 
         self.api_settings_btn = QPushButton("⚙️ API 設定")
         self.api_settings_btn.clicked.connect(self.open_api_settings)
-        self.toolbar_layout.addWidget(self.api_settings_btn)
+        row1_layout.addWidget(self.api_settings_btn)
 
-        self.toolbar_layout.addStretch()
+        row1_layout.addSpacing(4)
 
         self.model_label = QLabel("模型:")
         self.model_label.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        self.toolbar_layout.addWidget(self.model_label)
+        row1_layout.addWidget(self.model_label)
 
         self.model_combo = QComboBox()
-        self.model_combo.setMinimumWidth(180)
-        self.toolbar_layout.addWidget(self.model_combo)
+        self.model_combo.setMinimumWidth(150)
+        row1_layout.addWidget(self.model_combo)
 
         self.refresh_btn = QPushButton("🔄 重新整理")
         self.refresh_btn.clicked.connect(self.load_installed_models)
-        self.toolbar_layout.addWidget(self.refresh_btn)
+        row1_layout.addWidget(self.refresh_btn)
+
+        row1_layout.addStretch()
 
         self.env_setup_btn = QPushButton("📥 本機環境精靈")
         self.env_setup_btn.clicked.connect(self.open_environment_dialog)
-        self.toolbar_layout.addWidget(self.env_setup_btn)
+        row1_layout.addWidget(self.env_setup_btn)
 
-        # 語言切換按鈕
         self.lang_btn = QPushButton("🌐 English" if self.ui_language == "zh_TW" else "🌐 繁體中文")
         self.lang_btn.clicked.connect(self.toggle_language)
-        self.toolbar_layout.addWidget(self.lang_btn)
+        row1_layout.addWidget(self.lang_btn)
 
-        # 主題切換
         self.theme_btn = QPushButton("🌙 暗黑模式" if not self.is_dark_mode else "☀️ 明亮模式")
         self.theme_btn.clicked.connect(self.toggle_theme)
-        self.toolbar_layout.addWidget(self.theme_btn)
+        row1_layout.addWidget(self.theme_btn)
 
-        # 更新按鈕
         self.update_btn = QPushButton("🚀 檢查更新")
         self.update_btn.clicked.connect(self.open_update_dialog)
-        self.toolbar_layout.addWidget(self.update_btn)
+        row1_layout.addWidget(self.update_btn)
 
-        self.main_layout.addLayout(self.toolbar_layout)
+        toolbar_container_layout.addLayout(row1_layout)
 
-        # --- 控制列 (Row 2): 寫作情境模式 + 文章範圍 + 章節定位 ---
-        self.mode_control_frame = QFrame()
-        self.mode_control_frame.setFrameShape(QFrame.StyledPanel)
-        mode_ctrl_layout = QHBoxLayout(self.mode_control_frame)
-        mode_ctrl_layout.setContentsMargins(10, 6, 10, 6)
-        mode_ctrl_layout.setSpacing(10)
+        # Row 2: 寫作情境模式 + 文章範圍 + 章節定位 + 載入情境範文
+        row2_layout = QHBoxLayout()
+        row2_layout.setContentsMargins(0, 0, 0, 0)
+        row2_layout.setSpacing(6)
 
         self.mode_lbl = QLabel("寫作情境:")
         self.mode_lbl.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        mode_ctrl_layout.addWidget(self.mode_lbl)
+        row2_layout.addWidget(self.mode_lbl)
 
         self.mode_combo = QComboBox()
         self.mode_combo.addItems([
@@ -2107,34 +2117,40 @@ class AcademicReviewerApp(QMainWindow):
         mode_idx_map = {"academic": 0, "correspondence": 1, "application": 2, "business": 3}
         self.mode_combo.setCurrentIndex(mode_idx_map.get(self.writing_mode, 0))
         self.mode_combo.currentIndexChanged.connect(self.on_writing_mode_changed)
-        mode_ctrl_layout.addWidget(self.mode_combo)
+        row2_layout.addWidget(self.mode_combo)
 
-        mode_ctrl_layout.addSpacing(10)
+        row2_layout.addSpacing(10)
 
         self.scope_lbl = QLabel("文章範圍:")
         self.scope_lbl.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        mode_ctrl_layout.addWidget(self.scope_lbl)
+        row2_layout.addWidget(self.scope_lbl)
 
         self.scope_combo = QComboBox()
         self.scope_combo.addItems(["📄 全篇完整文章", "📑 局部段落選取"])
         self.scope_combo.setCurrentIndex(1 if self.context_scope == "partial" else 0)
         self.scope_combo.currentIndexChanged.connect(self.on_context_scope_changed)
-        mode_ctrl_layout.addWidget(self.scope_combo)
+        row2_layout.addWidget(self.scope_combo)
+
+        row2_layout.addSpacing(10)
 
         self.section_lbl = QLabel("章節定位:")
         self.section_lbl.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        mode_ctrl_layout.addWidget(self.section_lbl)
+        row2_layout.addWidget(self.section_lbl)
 
         self.section_combo = QComboBox()
-        mode_ctrl_layout.addWidget(self.section_combo)
+        row2_layout.addWidget(self.section_combo)
 
-        mode_ctrl_layout.addStretch()
+        row2_layout.addSpacing(10)
 
         self.load_sample_btn = QPushButton("📋 載入情境範文")
         self.load_sample_btn.clicked.connect(self.load_mode_sample_text)
-        mode_ctrl_layout.addWidget(self.load_sample_btn)
+        row2_layout.addWidget(self.load_sample_btn)
 
-        self.main_layout.addWidget(self.mode_control_frame)
+        row2_layout.addStretch()
+
+        toolbar_container_layout.addLayout(row2_layout)
+
+        self.main_layout.addWidget(self.unified_toolbar, 0)
 
         # --- 三欄分割器 ---
         self.splitter = QSplitter(Qt.Horizontal)
@@ -2251,7 +2267,7 @@ class AcademicReviewerApp(QMainWindow):
 
         self.splitter.addWidget(self.right_widget)
         self.splitter.setSizes([470, 540, 470])
-        self.main_layout.addWidget(self.splitter)
+        self.main_layout.addWidget(self.splitter, 1)
 
         self.refresh_section_combo()
         self.update_engine_ui()
@@ -2414,13 +2430,16 @@ class AcademicReviewerApp(QMainWindow):
             self.assessment_box.set_theme_mode(True)
             self.revised_browser.set_theme_mode(True)
 
-            self.mode_control_frame.setStyleSheet(f"background-color: {bg_card}; border: 1px solid {border_col}; border-radius: 6px;")
+            self.unified_toolbar.setStyleSheet(f"#unifiedToolbar {{ background-color: {bg_card}; border: 1px solid {border_col}; border-radius: 6px; }}")
+            self.mode_lbl.setStyleSheet(f"color: {text_sub}; font-size: 11px; font-weight: bold;")
+            self.scope_lbl.setStyleSheet(f"color: {text_sub}; font-size: 11px; font-weight: bold;")
+            self.section_lbl.setStyleSheet(f"color: {text_sub}; font-size: 11px; font-weight: bold;")
             self.preflight_box.setStyleSheet(f"background-color: {bg_card}; border: 1px solid {border_col}; border-radius: 6px;")
 
             btn_normal = f"""
                 QPushButton {{
                     background-color: {bg_card}; color: {text_main}; border: 1px solid {border_col};
-                    border-radius: 5px; padding: 5px 10px; font-size: 11px; font-weight: 500;
+                    border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 500; min-height: 20px;
                 }}
                 QPushButton:hover {{ background-color: #334155; }}
             """
@@ -2434,7 +2453,7 @@ class AcademicReviewerApp(QMainWindow):
             """)
 
             combo_style = f"""
-                QComboBox {{ background-color: {bg_card}; color: {text_main}; border: 1px solid {border_col}; border-radius: 5px; padding: 4px 8px; font-size: 12px; }}
+                QComboBox {{ background-color: {bg_card}; color: {text_main}; border: 1px solid {border_col}; border-radius: 4px; padding: 2px 6px; font-size: 11px; min-height: 20px; }}
                 QComboBox QAbstractItemView {{ background-color: {bg_card}; color: {text_main}; selection-background-color: #334155; selection-color: #38bdf8; }}
             """
             for c in [self.engine_combo, self.model_combo, self.mode_combo, self.scope_combo, self.section_combo]:
@@ -2462,13 +2481,16 @@ class AcademicReviewerApp(QMainWindow):
             self.assessment_box.set_theme_mode(False)
             self.revised_browser.set_theme_mode(False)
 
-            self.mode_control_frame.setStyleSheet(f"background-color: {bg_card}; border: 1px solid #e2e8f0; border-radius: 6px;")
+            self.unified_toolbar.setStyleSheet(f"#unifiedToolbar {{ background-color: {bg_card}; border: 1px solid #e2e8f0; border-radius: 6px; }}")
+            self.mode_lbl.setStyleSheet(f"color: {text_sub}; font-size: 11px; font-weight: bold;")
+            self.scope_lbl.setStyleSheet(f"color: {text_sub}; font-size: 11px; font-weight: bold;")
+            self.section_lbl.setStyleSheet(f"color: {text_sub}; font-size: 11px; font-weight: bold;")
             self.preflight_box.setStyleSheet(f"background-color: {bg_card}; border: 1px solid #e2e8f0; border-radius: 6px;")
 
             btn_normal = f"""
                 QPushButton {{
                     background-color: {bg_card}; color: {text_main}; border: 1px solid {border_col};
-                    border-radius: 5px; padding: 5px 10px; font-size: 11px; font-weight: 500;
+                    border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 500; min-height: 20px;
                 }}
                 QPushButton:hover {{ background-color: #f1f5f9; }}
             """
@@ -2482,7 +2504,7 @@ class AcademicReviewerApp(QMainWindow):
             """)
 
             combo_style = f"""
-                QComboBox {{ background-color: {bg_card}; color: {text_main}; border: 1px solid {border_col}; border-radius: 5px; padding: 4px 8px; font-size: 12px; }}
+                QComboBox {{ background-color: {bg_card}; color: {text_main}; border: 1px solid {border_col}; border-radius: 4px; padding: 2px 6px; font-size: 11px; min-height: 20px; }}
                 QComboBox QAbstractItemView {{ background-color: {bg_card}; color: {text_main}; selection-background-color: #e2e8f0; selection-color: {text_main}; }}
             """
             for c in [self.engine_combo, self.model_combo, self.mode_combo, self.scope_combo, self.section_combo]:
