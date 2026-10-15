@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Test script for verifying AcademicNLPPipeline and its integration with LibreLlama Reviewer.
+Test script for verifying AcademicNLPPipeline and its integration with LibreLlama Lab Editor.
 """
 import sys
 import os

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Headless UI screenshot test for verifying NLP Pipeline in LibreLlama Reviewer v0.9.3.
+Headless UI screenshot test for verifying NLP Pipeline in LibreLlama Lab Editor v0.9.3.
 """
 import sys
 import os

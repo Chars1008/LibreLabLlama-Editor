@@ -26,7 +26,8 @@ from academic_nlp_pipeline import (
 )
 
 APP_VERSION = "0.9.3"
-DEFAULT_UPDATE_URL = "version.json"
+DEFAULT_UPDATE_URL = "https://raw.githubusercontent.com/Chars1008/LibreLlama-Lab-Editor/main/version.json"
+FALLBACK_UPDATE_URL = "https://raw.githubusercontent.com/Chars1008/LibreLlama-Reviewer/main/version.json"
 CONFIG_FILE = "app_config.json"
 
 # ==========================================
@@ -34,8 +35,8 @@ CONFIG_FILE = "app_config.json"
 # ==========================================
 I18N = {
     "zh_TW": {
-        "app_title": "LibreLlama Reviewer ─ 多情境寫作審查與改寫工作台",
-        "toolbar_title": "🦙 LibreLlama Reviewer",
+        "app_title": "LibreLlama Lab Editor ─ 多情境寫作審查與改寫工作台",
+        "toolbar_title": "🦙 LibreLlama Lab Editor",
         "pre_release_badge": "v0.9.3 封閉開發版",
         "engine_ollama": "🖥️ 在地 Ollama (100% 離線隱私)",
         "engine_api": "☁️ 線上 API (DeepSeek/OpenAI/Gemini)",
@@ -113,8 +114,8 @@ I18N = {
         "auto_fix_menu": "⚡ 一鍵自動修復縮寫與口語詞",
     },
     "en_US": {
-        "app_title": "LibreLlama Reviewer ─ Multi-Context Writing & Review Workbench",
-        "toolbar_title": "🦙 LibreLlama Reviewer",
+        "app_title": "LibreLlama Lab Editor ─ Multi-Context Writing & Review Workbench",
+        "toolbar_title": "🦙 LibreLlama Lab Editor",
         "pre_release_badge": "v0.9.3 Pre-release",
         "engine_ollama": "🖥️ Local Ollama (100% Offline Privacy)",
         "engine_api": "☁️ Cloud API (DeepSeek/OpenAI/Gemini)",
@@ -306,6 +307,9 @@ def load_config() -> dict:
         try:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                 saved = json.load(f)
+                # 自動修正舊版設定檔中的 "version.json" 成為正式 GitHub 端點
+                if saved.get("update_url") in ("version.json", "", None):
+                    saved["update_url"] = DEFAULT_UPDATE_URL
                 default_config.update(saved)
         except Exception:
             pass
@@ -1223,20 +1227,79 @@ class UpdateCheckWorker(QThread):
 
     def __init__(self, update_url: str):
         super().__init__()
-        self.update_url = update_url
+        self.update_url = (update_url or "").strip()
 
     def run(self):
         try:
-            if self.update_url.startswith("file://") or os.path.exists(self.update_url):
-                local_path = self.update_url.replace("file://", "").lstrip("/")
-                with open(local_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-            else:
-                resp = httpx.get(self.update_url, timeout=8.0, follow_redirects=True)
-                if resp.status_code != 200:
-                    self.check_finished.emit(False, "", "", "", f"HTTP {resp.status_code}")
+            url_to_use = self.update_url
+            app_dir = os.path.dirname(os.path.abspath(__file__))
+
+            # 1. 處理本地檔案路徑或空字串
+            data = None
+            if not url_to_use or url_to_use == "version.json":
+                # 優先檢查本地是否有可用的 version.json
+                local_v = os.path.join(app_dir, "version.json")
+                if os.path.exists(local_v):
+                    try:
+                        with open(local_v, "r", encoding="utf-8") as f:
+                            data = json.load(f)
+                    except Exception:
+                        pass
+                if data is None:
+                    url_to_use = DEFAULT_UPDATE_URL
+            elif url_to_use.startswith("file://"):
+                local_path = url_to_use.replace("file://", "").lstrip("/")
+                if os.path.exists(local_path):
+                    with open(local_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+            elif not (url_to_use.startswith("http://") or url_to_use.startswith("https://")):
+                cand_abs = os.path.abspath(url_to_use)
+                cand_rel = os.path.join(app_dir, url_to_use)
+                if os.path.exists(cand_abs):
+                    with open(cand_abs, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                elif os.path.exists(cand_rel):
+                    with open(cand_rel, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                else:
+                    url_to_use = DEFAULT_UPDATE_URL
+
+            # 2. 透過遠端 HTTP(S) 查詢（支援 Primary 與 Fallback 雙軌切換）
+            if data is None:
+                candidates = [url_to_use]
+                if url_to_use == DEFAULT_UPDATE_URL and FALLBACK_UPDATE_URL != DEFAULT_UPDATE_URL:
+                    candidates.append(FALLBACK_UPDATE_URL)
+
+                last_err = ""
+                for target in candidates:
+                    try:
+                        resp = httpx.get(target, timeout=8.0, follow_redirects=True)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            break
+                        elif resp.status_code == 404:
+                            last_err = f"HTTP 404 (端點不存在: {target})"
+                        else:
+                            last_err = f"HTTP {resp.status_code}"
+                    except Exception as ex:
+                        last_err = str(ex)
+
+                # 若遠端伺服器存取失敗（例如目前 GitHub 為 Private 倉庫），自動嘗試讀取本地檔案作為後備
+                if data is None:
+                    local_v = os.path.join(app_dir, "version.json")
+                    if os.path.exists(local_v):
+                        try:
+                            with open(local_v, "r", encoding="utf-8") as f:
+                                data = json.load(f)
+                        except Exception:
+                            pass
+
+                if data is None:
+                    err_msg = last_err or "Cannot connect to update server."
+                    if "404" in err_msg:
+                        err_msg += "（若 GitHub 倉庫目前為私人 Private 狀態，請於發布時切換為 Public 公開）"
+                    self.check_finished.emit(False, "", "", "", err_msg)
                     return
-                data = resp.json()
 
             latest_ver = data.get("latest_version", "").strip()
             changelog = data.get("changelog", "").strip()
@@ -1260,7 +1323,7 @@ class UpdateDownloadWorker(QThread):
 
     def run(self):
         try:
-            dest_path = os.path.join(tempfile.gettempdir(), "LibreLlamaReviewer_Setup_Update.exe")
+            dest_path = os.path.join(tempfile.gettempdir(), "LibreLlamaLabEditor_Setup_Update.exe")
             with httpx.stream("GET", self.download_url, follow_redirects=True, timeout=180.0) as resp:
                 if resp.status_code != 200:
                     self.finished.emit(False, f"HTTP {resp.status_code}")
@@ -1353,6 +1416,8 @@ class UpdateDialog(QDialog):
         adv_box.addWidget(url_lbl)
 
         saved_url = self.config.get("update_url", DEFAULT_UPDATE_URL)
+        if saved_url in ("version.json", "", None):
+            saved_url = DEFAULT_UPDATE_URL
         self.url_edit = QLineEdit(saved_url)
         adv_box.addWidget(self.url_edit)
         layout.addLayout(adv_box)
@@ -2248,7 +2313,7 @@ class AcademicReviewerApp(QMainWindow):
         row1_layout.setContentsMargins(0, 0, 0, 0)
         row1_layout.setSpacing(6)
 
-        self.title_label = QLabel("🦙 LibreLlama Reviewer")
+        self.title_label = QLabel(t["toolbar_title"])
         self.title_label.setFont(QFont("Segoe UI", 12, QFont.Bold))
         row1_layout.addWidget(self.title_label)
 
@@ -2592,6 +2657,7 @@ class AcademicReviewerApp(QMainWindow):
         t = I18N.get(self.ui_language, I18N["zh_TW"])
 
         self.setWindowTitle(t["app_title"])
+        self.title_label.setText(t["toolbar_title"])
         self.v_badge.setText(t["pre_release_badge"])
         self.lang_btn.setText(t["lang_btn"])
         self.refresh_btn.setText(t["refresh"])

@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 REG_UNINSTALL_KEYS = [
+    r"Software\Microsoft\Windows\CurrentVersion\Uninstall\LibreLlamaLabEditor",
     r"Software\Microsoft\Windows\CurrentVersion\Uninstall\LibreLlamaReviewer",
     r"Software\Microsoft\Windows\CurrentVersion\Uninstall\AcademicReviewer"
 ]
@@ -39,13 +40,13 @@ class UninstallWorker(QThread):
         try:
             self.progress.emit(10, "正在檢查並關閉執行中的程式...")
             if sys.platform == "win32":
-                for exe_name in ["LibreLlamaReviewer.exe", "AcademicReviewer.exe"]:
+                for exe_name in ["LibreLlamaLabEditor.exe", "LibreLlamaReviewer.exe", "AcademicReviewer.exe"]:
                     subprocess.run(["taskkill", "/F", "/IM", exe_name], capture_output=True)
                 time.sleep(0.5)
 
             self.progress.emit(30, "正在刪除桌面捷徑...")
             desktop_dir = os.path.join(os.path.expanduser("~"), "Desktop")
-            for lnk_name in ["LibreLlama Reviewer.lnk", "學術英文審查工作台.lnk"]:
+            for lnk_name in ["LibreLlama Lab Editor.lnk", "LibreLlama Reviewer.lnk", "學術英文審查工作台.lnk"]:
                 desk_lnk = os.path.join(desktop_dir, lnk_name)
                 if os.path.exists(desk_lnk):
                     try:
@@ -58,6 +59,8 @@ class UninstallWorker(QThread):
             if appdata:
                 start_dir = os.path.join(appdata, "Microsoft", "Windows", "Start Menu", "Programs")
                 for lnk_name in [
+                    "LibreLlama Lab Editor.lnk",
+                    "解除安裝 LibreLlama Lab Editor.lnk",
                     "LibreLlama Reviewer.lnk",
                     "解除安裝 LibreLlama Reviewer.lnk",
                     "學術英文審查工作台.lnk",

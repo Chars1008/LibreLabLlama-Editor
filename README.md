@@ -1,4 +1,4 @@
-# 🦙 LibreLlama Reviewer (多情境寫作審查與改寫工作台) v0.9.3
+# 🦙 LibreLlama Lab Editor (多情境寫作審查與改寫工作台) v0.9.3
 
 > **⚠️ 封閉開發階段 (Closed Development / Pre-release) ｜ 正式公開發布時定為 ver 1.0**  
 > **零 LLM 依賴 NLP 規則管線 ｜ 確定性自動格式無損淨化 ｜ 語法與風格結構化診斷報告 ｜ 多語系介面 ｜ 四大情境寫作模式 ｜ 100% 離線隱私或線上 API**
@@ -15,7 +15,7 @@
 4. **生硬的搭配詞（Awkward Collocations）**：字詞單看文法正確，但母語人士絕不這樣搭配（例如 *make an experiment*、*statistically big difference*），且一般工具僅提供單一死板改法，缺乏多樣語感選擇。
 5. **片面段落被斷章取義**：使用者往往只修改論文其中一節（如僅修 Methodology 或僅修 Introduction），一般 LLM 常誤判「缺乏結論」或「缺少背景」。
 
-**LibreLlama Reviewer** 於 **v0.9.3 封閉開發版** 引入全新「零 LLM 依賴之學術 NLP 規則管線 (`academic_nlp_pipeline.py`)」，與 LLM 推論深度串接，為即將到來的 **v1.0 正式公開發布** 奠定扎實架構！
+**LibreLlama Lab Editor** 於 **v0.9.3 封閉開發版** 引入全新「零 LLM 依賴之學術 NLP 規則管線 (`academic_nlp_pipeline.py`)」與智慧線上更新端點，為即將到來的 **v1.0 正式公開發布** 奠定扎實架構！
 
 ---
 
@@ -49,7 +49,7 @@
 
 ```
 +-------------------------------------------------------------------------------------------------------+
-|                                    🦙 LibreLlama Reviewer (70px 整合型頂部工具列)                       |
+|                                    🦙 LibreLlama Lab Editor (70px 整合型頂部工具列)                      |
 |  [品牌與引擎] 在地 Ollama / 線上 API ｜ 模型選擇 ｜ 環境精靈 ｜ 🌐 語言切換 ｜ 🌙 主題切換 ｜ 🚀 檢查更新   |
 |  [情境與定位] 寫作情境 (4大類) ｜ 文章範圍 (全篇/局部) ｜ 章節定位 (含 Auto-Detect 自動判定) ｜ 📋 載入範文    |
 +-----------------------------+------------------------------------+------------------------------------+
@@ -83,13 +83,13 @@
 | **v0.3.0** | 暗黑主題與雲端擴充 | 導入高質感暗黑模式（Dark Theme）；新增線上 OpenAI 相容 API 引擎支援（DeepSeek / GPT-4o / Gemini / Groq），解決本機算力不足情境。 |
 | **v0.4.0** | 視覺對比與環境精靈 | 修復暗模式下編輯器輸入反黑瑕疵（純白 `#ffffff` 高對比文字）；打造 `OllamaEnvironmentDialog` 一鍵環境檢測、安裝與精選模型拉取精靈。 |
 | **v0.5.0** | 生命週期與發行封裝 | 打造獨立安裝程式（`installer.py`）與完整解除安裝程式（`uninstall.py`）；開發線上版本檢測與在線升級視窗（`version.json`）。 |
-| **v0.6.0** | 品牌確立與版本控制 | 正式確立品牌為 **LibreLlama Reviewer**；建立 Git 版本控制並於 GitHub 建立遠端開源專案倉庫。 |
+| **v0.6.0** | 品牌確立與版本控制 | 正式確立品牌為 **LibreLlama Lab Editor**；建立 Git 版本控制並於 GitHub 建立遠端開源專案倉庫。 |
 | **v0.7.0** | 多情境與多樣改寫躍進 | 封閉開發降版整頓；新增純英文（Pure English）與正體中文多語系切換；新增四大情境寫作模式；新增文章範圍與章節定位；導入道地搭配詞（Collocations）與 3~4 種多語感風格選項。 |
 | **v0.8.0** | 解安裝修復與發布同步 | 修復解安裝程式 `tempfile` 引用例外；實現雙向安裝路徑自動清理機制；校準遠端 GitHub Release 更新線路。 |
 | **v0.9.0** | 頂部工具列整合架構 | 重構頂部控制區為 70px 緊湊整合型工具列（`unified_toolbar`）；主視窗佈局權重優化，釋放 90%+ 垂直空間給三欄主工作區。 |
 | **v0.9.1** | 雙軌不互斥與版面重構 | 錯誤雙軌不互斥檢核（搭配詞與句構邏輯並存）；放寬 Pydantic 容錯恢復實證補強分析；章節定位新增 Auto-Detect。 |
 | **v0.9.2** | 雙語評論修復與底部工具列 | ① 英文審查意見與實證建議完整修復，徹底根除空白框；② 欄位標題精煉去雜訊；③ 全新底部操作工具列；④ 修改後全文規則預檢。 |
-| **v0.9.3** | **當前版本**<br>零 LLM 依賴 NLP 規則管線 | ① **零 LLM 依賴之學術 NLP 規則管線 (`academic_nlp_pipeline.py`)**：基於 `spaCy` + `Regex` 實現可插拔管線；<br>② **Auto-Sanitize（自動無損修正）**：文本送審前以確定性規則自動修正科學單位空格（`10mL` ➔ `10 mL`）與及物動詞後錯誤介系詞（`discuss about` ➔ `discuss`），減輕 LLM 負擔；<br>③ **Rule-Based Diagnostics（結構化規則診斷）**：精準偵測跨子句主謂一致性（SVA）、中式雙重連接詞（`although... but` / `because... so`）、句首裸露指示代名詞（`This/These` 接動詞）、過度名詞化（`conduct an analysis of`）以及被動語態與 > 35 字長句，支援標準化 JSON 陣列；<br>④ **即時紅綠刪增對照與一鍵修正**：未執行 LLM 審查前，修改後全文區即時呈現實體替換詞與風格標籤，一鍵快修自動淨化全篇格式。 |
+| **v0.9.3** | **當前版本**<br>零 LLM 依賴 NLP 規則管線與自動更新升級 | ① **專案品牌更名為 LibreLlama Lab Editor**；<br>② **線上自動更新修復**：重構 `UpdateCheckWorker`，自動支援 GitHub 遠端與本機雙軌解析，杜絕缺少協定 (Missing Protocol) 異常；<br>③ **零 LLM 依賴之學術 NLP 規則管線 (`academic_nlp_pipeline.py`)**：基於 `spaCy` + `Regex` 實現可插拔管線；<br>④ **Auto-Sanitize（自動無損修正）**：文本送審前以確定性規則自動修正科學單位空格（`10mL` ➔ `10 mL`）與及物動詞後錯誤介系詞（`discuss about` ➔ `discuss`），減輕 LLM 負擔；<br>⑤ **Rule-Based Diagnostics（結構化規則診斷）**：精準偵測跨子句主謂一致性（SVA）、中式雙重連接詞、句首裸露指示代名詞、過度名詞化以及被動語態與長句。 |
 | **v0.9.4** | 預計里程碑 | 🔬 **跨段落邏輯斷層掃描**：針對科學論文情境強化「方法段實驗參數 vs 討論段推論結論」跨段落邏輯一致性比對。 |
 | **v0.9.5** | 預計里程碑 | 🔄 **Git-Diff 雙向差異對照**：新增類 Git 行內紅綠刪增對照檢視；提供每張卡片「[✓ 接受] / [✗ 拒絕保留原文]」一鍵主控機制。 |
 | **v0.9.6** | 預計里程碑 | 🧬 **專有名詞一致性檢查**：本機正則與 LLM 雙模掃描特定基因符號、質體大小寫、化學藥品縮寫前後一致性。 |
@@ -106,8 +106,8 @@
    ```
 3. **打包獨立安裝精靈**：
    ```powershell
-   pyinstaller --noconfirm --onedir --windowed --name "LibreLlamaReviewer" academic_reviewer_app.py
+   pyinstaller --noconfirm --onedir --windowed --name "LibreLlamaLabEditor" academic_reviewer_app.py
    pyinstaller --noconfirm --onefile --windowed --name "uninstall" uninstall.py
-   # 複製 uninstall.exe 至 dist/LibreLlamaReviewer 後打包為 app_bundle.zip
-   pyinstaller --noconfirm --onefile --windowed --name "LibreLlamaReviewer_Setup_v0.9" --add-data "app_bundle.zip;." installer.py
+   # 複製 uninstall.exe 至 dist/LibreLlamaLabEditor 後打包為 app_bundle.zip
+   pyinstaller --noconfirm --onefile --windowed --name "LibreLlamaLabEditor_Setup_v0.9.3" --add-data "app_bundle.zip;." installer.py
    ```

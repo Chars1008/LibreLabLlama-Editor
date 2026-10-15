@@ -17,13 +17,13 @@ import httpx
 import ollama
 import winreg
 
-def register_windows_uninstall(install_dir: str, version: str = "0.9.1"):
-    key_path = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\LibreLlamaReviewer"
-    exe_path = os.path.join(install_dir, "LibreLlamaReviewer.exe")
+def register_windows_uninstall(install_dir: str, version: str = "0.9.3"):
+    key_path = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\LibreLlamaLabEditor"
+    exe_path = os.path.join(install_dir, "LibreLlamaLabEditor.exe")
     uninst_path = os.path.join(install_dir, "uninstall.exe")
     try:
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
-            winreg.SetValueEx(key, "DisplayName", 0, winreg.REG_SZ, "LibreLlama Reviewer (學術英文審查工作台)")
+            winreg.SetValueEx(key, "DisplayName", 0, winreg.REG_SZ, "LibreLlama Lab Editor (多情境寫作審查與改寫工作台)")
             winreg.SetValueEx(key, "DisplayVersion", 0, winreg.REG_SZ, version)
             winreg.SetValueEx(key, "Publisher", 0, winreg.REG_SZ, "LibreLlama Project")
             winreg.SetValueEx(key, "DisplayIcon", 0, winreg.REG_SZ, f"{exe_path},0")
@@ -76,7 +76,9 @@ class ExtractWorker(QThread):
             zip_path = get_bundle_zip_path()
             if not zip_path or not os.path.exists(zip_path):
                 # 若無 zip，檢查是否有已編譯的 dist 資料夾
-                alt_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist", "LibreLlamaReviewer")
+                alt_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist", "LibreLlamaLabEditor")
+                if not os.path.exists(alt_src):
+                    alt_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist", "LibreLlamaReviewer")
                 if not os.path.exists(alt_src):
                     alt_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist", "AcademicReviewer")
                 if os.path.exists(alt_src):
@@ -101,9 +103,9 @@ class ExtractWorker(QThread):
                     file_list = z.infolist()
                     total = len(file_list)
                     for idx, item in enumerate(file_list):
-                        # 去除最頂層目錄路徑 (LibreLlamaReviewer/... 或 AcademicReviewer/...)
+                        # 去除最頂層目錄路徑 (LibreLlamaLabEditor/... 或 LibreLlamaReviewer/... 等)
                         parts = item.filename.split('/')
-                        if len(parts) > 1 and parts[0] in ["LibreLlamaReviewer", "AcademicReviewer"]:
+                        if len(parts) > 1 and parts[0] in ["LibreLlamaLabEditor", "LibreLlamaReviewer", "AcademicReviewer"]:
                             rel_name = '/'.join(parts[1:])
                         else:
                             rel_name = item.filename
@@ -121,22 +123,24 @@ class ExtractWorker(QThread):
                         if idx % 10 == 0:
                             self.progress.emit(pct, f"正在解壓縮檔案: {os.path.basename(rel_name)}")
 
-            exe_path = os.path.join(self.target_dir, "LibreLlamaReviewer.exe")
+            exe_path = os.path.join(self.target_dir, "LibreLlamaLabEditor.exe")
             if not os.path.exists(exe_path):
-                # 若舊名稱存在，自動重新命名為 LibreLlamaReviewer.exe
-                old_exe = os.path.join(self.target_dir, "AcademicReviewer.exe")
-                if os.path.exists(old_exe):
-                    try:
-                        shutil.move(old_exe, exe_path)
-                    except Exception:
-                        exe_path = old_exe
+                # 若舊名稱存在，自動重新命名為 LibreLlamaLabEditor.exe
+                for old_name in ["LibreLlamaReviewer.exe", "AcademicReviewer.exe"]:
+                    old_exe = os.path.join(self.target_dir, old_name)
+                    if os.path.exists(old_exe):
+                        try:
+                            shutil.move(old_exe, exe_path)
+                            break
+                        except Exception:
+                            exe_path = old_exe
 
             # 建立捷徑
             self.progress.emit(95, "正在建立桌面與開始功能表捷徑...")
             if self.create_desktop:
                 desktop_dir = os.path.join(os.path.expanduser("~"), "Desktop")
                 if os.path.exists(desktop_dir):
-                    lnk = os.path.join(desktop_dir, "LibreLlama Reviewer.lnk")
+                    lnk = os.path.join(desktop_dir, "LibreLlama Lab Editor.lnk")
                     create_windows_shortcut(exe_path, lnk, self.target_dir)
 
             if self.create_start:
@@ -144,16 +148,16 @@ class ExtractWorker(QThread):
                 if appdata:
                     start_dir = os.path.join(appdata, "Microsoft", "Windows", "Start Menu", "Programs")
                     if os.path.exists(start_dir):
-                        lnk = os.path.join(start_dir, "LibreLlama Reviewer.lnk")
+                        lnk = os.path.join(start_dir, "LibreLlama Lab Editor.lnk")
                         create_windows_shortcut(exe_path, lnk, self.target_dir)
 
                         uninst_exe = os.path.join(self.target_dir, "uninstall.exe")
                         if os.path.exists(uninst_exe):
-                            uninst_lnk = os.path.join(start_dir, "解除安裝 LibreLlama Reviewer.lnk")
+                            uninst_lnk = os.path.join(start_dir, "解除安裝 LibreLlama Lab Editor.lnk")
                             create_windows_shortcut(uninst_exe, uninst_lnk, self.target_dir)
 
             # 註冊至 Windows 設定之「應用程式與功能」
-            register_windows_uninstall(self.target_dir, "0.9.1")
+            register_windows_uninstall(self.target_dir, "0.9.3")
 
             self.progress.emit(100, "應用程式檔案部署完成！")
             self.finished.emit(True, "檔案解壓縮與安裝完成！")
@@ -220,9 +224,9 @@ class ModelPullWorker(QThread):
 class InstallerWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("LibreLlama Reviewer ─ 安裝精靈 v0.9.1 (封閉開發版)")
+        self.setWindowTitle("LibreLlama Lab Editor ─ 安裝精靈 v0.9.3 (封閉開發版)")
         self.resize(680, 520)
-        self.target_dir = os.path.join(os.environ.get("LOCALAPPDATA", "C:\\"), "LibreLlamaReviewer")
+        self.target_dir = os.path.join(os.environ.get("LOCALAPPDATA", "C:\\"), "LibreLlamaLabEditor")
         self.extract_worker: Optional[ExtractWorker] = None
         self.download_worker: Optional[OllamaDownloadWorker] = None
         self.pull_worker: Optional[ModelPullWorker] = None
@@ -255,11 +259,11 @@ class InstallerWindow(QMainWindow):
 
         # 頂部橫幅
         header_layout = QHBoxLayout()
-        header_title = QLabel("🦙 LibreLlama Reviewer ─ 安裝精靈")
+        header_title = QLabel("🦙 LibreLlama Lab Editor ─ 安裝精靈")
         header_title.setFont(QFont("Segoe UI", 14, QFont.Bold))
         header_layout.addWidget(header_title)
         header_layout.addStretch()
-        v_tag = QLabel("版本 v0.9.1 (封閉開發版)")
+        v_tag = QLabel("版本 v0.9.3 (封閉開發版)")
         v_tag.setStyleSheet("color: #94a3b8; font-size: 11px;")
         header_layout.addWidget(v_tag)
         main_layout.addLayout(header_layout)
@@ -323,17 +327,17 @@ class InstallerWindow(QMainWindow):
         l = QVBoxLayout(w)
         l.setSpacing(14)
 
-        t = QLabel("歡迎使用【LibreLlama Reviewer】安裝精靈")
+        t = QLabel("歡迎使用【LibreLlama Lab Editor】安裝精靈")
         t.setFont(QFont("Segoe UI", 13, QFont.Bold))
         l.addWidget(t)
 
         info = QLabel(
-            "LibreLlama Reviewer 專為國際頂級期刊（Nature, IEEE, Science, ACM 等）投稿學者打造，\n"
+            "LibreLlama Lab Editor 專為國際頂級期刊（Nature, IEEE, Science, ACM 等）投稿學者與實驗室打造，\n"
             "具備以下核心能力：\n\n"
             "• 🔬 <b>審稿人同儕審查實質建議</b>：針對消融實驗、顯著性檢定與因果推論進行嚴密批判，並提供中英雙語對照。\n"
             "• ✍️ <b>逐句穿透式窮舉審查</b>：深入挖掘 6~10 處改寫點，大幅提升論文刊登率。\n"
             "• 🛡️ <b>混合架構雙模運算</b>：支援 100% 離線在地 Ollama 模型（極致隱私保護）與雲端旗艦 API（免下載模型）。\n"
-            "• ⚡ <b>本機 0 秒秒級快篩</b>：即時攔截縮寫、口語贅詞與過度斷言。\n\n"
+            "• ⚡ <b>零 LLM 依賴 NLP 規則管線</b>：毫秒級自動修復單位空格、及物介系詞、主謂一致性與中英連詞。\n\n"
             "本安裝精靈將協助您在電腦上安裝工作台，並引導完成本機 Ollama 運算環境與模型配置。"
         )
         info.setStyleSheet("color: #cbd5e1; line-height: 1.5; font-size: 12px;")
@@ -387,7 +391,7 @@ class InstallerWindow(QMainWindow):
     def browse_path(self):
         folder = QFileDialog.getExistingDirectory(self, "選擇安裝資料夾", self.target_dir)
         if folder:
-            self.target_dir = os.path.join(folder, "LibreLlamaReviewer")
+            self.target_dir = os.path.join(folder, "LibreLlamaLabEditor")
             self.path_edit.setText(self.target_dir)
 
     def create_extract_page(self) -> QWidget:
@@ -512,7 +516,7 @@ class InstallerWindow(QMainWindow):
         l.addWidget(t)
 
         info = QLabel(
-            "【LibreLlama Reviewer】已成功部署至您的電腦。\n\n"
+            "【LibreLlama Lab Editor】已成功部署至您的電腦。\n\n"
             "• 您可隨時從桌面捷徑或開始功能表啟動本軟體。\n"
             "• 進入工作台後，若需下載其他學術模型（如 qwen2.5:14b）或切換線上 API，均可透過頂部工具列一鍵完成。"
         )
@@ -521,7 +525,7 @@ class InstallerWindow(QMainWindow):
         l.addWidget(info)
 
         l.addSpacing(10)
-        self.chk_launch = QCheckBox("立即啟動 LibreLlama Reviewer")
+        self.chk_launch = QCheckBox("立即啟動 LibreLlama Lab Editor")
         self.chk_launch.setChecked(True)
         self.chk_launch.setFont(QFont("Segoe UI", 11, QFont.Bold))
         l.addWidget(self.chk_launch)
@@ -557,7 +561,9 @@ class InstallerWindow(QMainWindow):
         elif idx == 4:
             # 完成頁 -> 啟動應用程式並關閉安裝程式
             if self.chk_launch.isChecked():
-                exe_path = os.path.join(self.target_dir, "LibreLlamaReviewer.exe")
+                exe_path = os.path.join(self.target_dir, "LibreLlamaLabEditor.exe")
+                if not os.path.exists(exe_path):
+                    exe_path = os.path.join(self.target_dir, "LibreLlamaReviewer.exe")
                 if not os.path.exists(exe_path):
                     exe_path = os.path.join(self.target_dir, "AcademicReviewer.exe")
                 if os.path.exists(exe_path):

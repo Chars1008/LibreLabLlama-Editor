@@ -1,6 +1,6 @@
 {
   "latest_version": "0.9.3",
   "release_date": "2026-10-16",
-  "download_url": "https://github.com/Chars1008/LibreLlama-Reviewer/releases/download/v0.9.3/LibreLlamaReviewer_Setup_v0.9.3.exe",
-  "changelog": "【v0.9.3 更新紀錄 ─ 封閉開發版 (Closed Development Pre-release)】\n1. 零 LLM 依賴之學術 NLP 規則管線 (spaCy + Regex)：打造獨立可插拔模組 academic_nlp_pipeline.py，於送審前執行毫秒級語法與文風分析\n2. 確定性自動無損修正 (Auto-Sanitize)：自動修復科學單位空格 (如 10mL -> 10 mL, 50uM -> 50 uM, 37°C -> 37 °C, 24h -> 24 h) 與及物動詞多餘介系詞 (如 discuss about -> discuss, emphasize on -> emphasize)，於文本送審前自動淨化\n3. 深度結構化語言學規則診斷 (Rule-Based Diagnostics)：精準捕捉跨子句主謂一致性 (SVA)、中式雙重連接詞 (although... but / because... so)、句首裸露指示代名詞 (This/These 直接接動詞)、過度名詞化 (conduct an analysis of -> analyze) 以及被動語態與超過 35 字長句標記，回傳標準 JSON 陣列\n4. 修改後全文預檢雙軌整合：未呼叫模型前即時呈現刪除線與替換詞標記；一鍵自動修復無縫整合 Auto-Sanitize"
+  "download_url": "https://github.com/Chars1008/LibreLlama-Lab-Editor/releases/download/v0.9.3/LibreLlamaLabEditor_Setup_v0.9.3.exe",
+  "changelog": "【v0.9.3 更新紀錄 ─ 封閉開發版 (Closed Development Pre-release)】\n1. 專案品牌全新升級為 LibreLlama Lab Editor，全面優化多情境學術與實驗室寫作工作流\n2. 智慧線上自動更新修復：重構 UpdateCheckWorker，自動支援 GitHub 遠端與本機雙軌解析，杜絕缺少協定 (Missing Protocol) 與路徑異常\n3. 零 LLM 依賴之學術 NLP 規則管線 (spaCy + Regex)：打造獨立可插拔模組 academic_nlp_pipeline.py，於送審前執行毫秒級語法與文風分析\n4. 確定性自動無損修正 (Auto-Sanitize)：自動修復科學單位空格 (如 10mL -> 10 mL, 50uM -> 50 uM, 37°C -> 37 °C, 24h -> 24 h) 與及物動詞多餘介系詞 (如 discuss about -> discuss, emphasize on -> emphasize)\n5. 深度結構化語言學規則診斷 (Rule-Based Diagnostics)：精準捕捉主謂一致性 (SVA)、中式雙重連接詞、句首裸露代名詞、過度名詞化以及被動語態與長句標記"
 }

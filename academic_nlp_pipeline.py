@@ -600,7 +600,7 @@ if __name__ == "__main__":
     )
 
     print("==================================================")
-    print("LibreLlama Reviewer -- NLP Rule Pipeline Test")
+    print("LibreLlama Lab Editor -- NLP Rule Pipeline Test")
     print("==================================================")
     res = AcademicNLPPipeline.process(sample)
 
