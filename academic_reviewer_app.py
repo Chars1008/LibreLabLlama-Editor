@@ -21,7 +21,7 @@ import ollama
 import httpx
 import json_repair
 
-APP_VERSION = "0.9.0"
+APP_VERSION = "0.9.1"
 DEFAULT_UPDATE_URL = "version.json"
 CONFIG_FILE = "app_config.json"
 
@@ -32,7 +32,7 @@ I18N = {
     "zh_TW": {
         "app_title": "LibreLlama Reviewer ─ 多情境寫作審查與改寫工作台",
         "toolbar_title": "🦙 LibreLlama Reviewer",
-        "pre_release_badge": "v0.9.0 封閉開發版",
+        "pre_release_badge": "v0.9.1 封閉開發版",
         "engine_ollama": "🖥️ 在地 Ollama (100% 離線隱私)",
         "engine_api": "☁️ 線上 API (DeepSeek/OpenAI/Gemini)",
         "api_settings": "⚙️ API 設定",
@@ -103,7 +103,7 @@ I18N = {
     "en_US": {
         "app_title": "LibreLlama Reviewer ─ Multi-Context Writing & Review Workbench",
         "toolbar_title": "🦙 LibreLlama Reviewer",
-        "pre_release_badge": "v0.9.0 Pre-release",
+        "pre_release_badge": "v0.9.1 Pre-release",
         "engine_ollama": "🖥️ Local Ollama (100% Offline Privacy)",
         "engine_api": "☁️ Cloud API (DeepSeek/OpenAI/Gemini)",
         "api_settings": "⚙️ API Settings",

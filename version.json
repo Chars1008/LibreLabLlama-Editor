@@ -1,6 +1,6 @@
 {
-  "latest_version": "0.9.0",
+  "latest_version": "0.9.1",
   "release_date": "2026-10-16",
-  "download_url": "https://github.com/Chars1008/LibreLlama-Reviewer/releases/download/v0.9.0/LibreLlamaReviewer_Setup_v0.9.exe",
-  "changelog": "【v0.9.0 重大更新紀錄 ─ 封閉開發版 (Closed Development / Pre-release)】\n1. 版本號重整為 0.9.0，確立正式公開前之封閉測試與開發節奏\n2. 新增多語系操作界面切換：繁體中文／純英文 (English Mode)，英文模式下全面隱藏所有正體中文註解，輸出亦保證純英文\n3. 新增 4 大情境寫作模式：學術期刊論文、專業書信往來 (Email)、留學求職自述 (SOP/Cover Letter)、商務決策報告\n4. 新增文章範圍與章節針對性定位 (Full Text vs Partial Excerpt)，局部段落專項評判，杜絕上下文斷章取義\n5. 強化道地搭配詞 (Collocation Defect) 檢驗，提供 3 至 4 種不同語感風格的替代選項 (Option A, B, C, D)"
+  "download_url": "https://github.com/Chars1008/LibreLlama-Reviewer/releases/download/v0.9.1/LibreLlamaReviewer_Setup_v0.9.1.exe",
+  "changelog": "【v0.9.1 更新紀錄 ─ 封閉開發版 (Closed Development Pre-release)】\n1. 介面極致優化：寫作情境、文章範圍、章節定位與頂部按鈕整合為 70px 緊湊頂部工具列，釋放 90%+ 視窗空間給三欄主工作區\n2. 確立語意化版號（Semantic Versioning）演進藍圖：梳理自對話初期至今 v0.1.0 至 v0.9.1 之 10 大里程碑，杜絕公開前版號混淆\n3. 奠定生物醫學跨段落邏輯斷層掃描、Git-Diff 雙向對照與專有名詞一致性檢驗之技術規範與架構基礎"
 }
