@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QSplitter, QTextEdit, QTextBrowser, QPushButton, QLabel, QComboBox,
     QScrollArea, QFrame, QMessageBox, QProgressBar, QMenu, QDialog,
-    QLineEdit, QFormLayout
+    QLineEdit, QFormLayout, QTabWidget, QStackedWidget
 )
 import subprocess
 import shutil
@@ -96,6 +96,24 @@ I18N = {
         "discourse_title": "文法句構、推論缺陷、修辭風格與邏輯矛盾",
         "discourse_placeholder_text": "✍️ 審查完成後，將在此列出逐句文法句構、推論缺陷、修辭風格與邏輯矛盾診斷卡片。",
 
+        # 中欄分頁與右欄互動工作台
+        "tab_recs": "💡 實證補強",
+        "tab_colloc": "🔤 搭配詞選項",
+        "tab_discourse": "⚖️ 句構與邏輯",
+        "monitor_title": "📡 智能審查執行監控",
+        "monitor_badge_ready": "就緒",
+        "monitor_badge_running": "🔄 審查進行中...",
+        "monitor_badge_done": "✅ 審查完成",
+        "chat_general_context": "🌐 全文綜合討論",
+        "chat_general_btn": "🌐 全文討論",
+        "chat_clear_btn": "🧹 清空",
+        "chat_input_placeholder": "輸入訊息與審閱模型討論或辯護... (Enter 發送，Shift+Enter 換行)",
+        "chat_send_btn": "🚀 發送",
+        "pill_defend": "🛡️ 領域慣用辯護",
+        "pill_top_tier": "✍️ 頂刊風格升級",
+        "pill_hedging": "🔬 語氣弱化防禦",
+        "pill_adopt": "🔄 產出替換句",
+
         # 圖例 Legend
         "legend_grammar": "🔴 文法與句構",
         "legend_deduction": "🟠 推論缺陷 / 過度宣稱",
@@ -174,6 +192,24 @@ I18N = {
         "right_title": "Discourse, Logic, Rhetoric & Grammar",
         "discourse_title": "Discourse, Logic, Rhetoric & Grammar Critiques",
         "discourse_placeholder_text": "✍️ Sentence-by-sentence grammar diagnostics, deductive flaws, tone, and logic critique cards will appear here.",
+
+        # Middle Tabs & Right Discussion Workbench
+        "tab_recs": "💡 Evidence Defenses",
+        "tab_colloc": "🔤 Collocations",
+        "tab_discourse": "⚖️ Syntax & Logic",
+        "monitor_title": "📡 Review Stream Monitor",
+        "monitor_badge_ready": "Ready",
+        "monitor_badge_running": "🔄 Reviewing...",
+        "monitor_badge_done": "✅ Complete",
+        "chat_general_context": "🌐 General Full-Text Discussion",
+        "chat_general_btn": "🌐 General Chat",
+        "chat_clear_btn": "🧹 Clear",
+        "chat_input_placeholder": "Type message to discuss or debate with reviewer... (Enter sends, Shift+Enter newline)",
+        "chat_send_btn": "🚀 Send",
+        "pill_defend": "🛡️ Defend (Domain Norm)",
+        "pill_top_tier": "✍️ Top-Tier Style",
+        "pill_hedging": "🔬 Hedging Defense",
+        "pill_adopt": "🔄 Generate Alternatives",
 
         # Legend
         "legend_grammar": "🔴 Grammar & Mechanics",
@@ -1956,14 +1992,118 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
             self.error.emit(str(e))
 
 # ==========================================
+# 5.1 互動對話輸入與背景工作線程 (ChatInputEdit & InteractiveChatWorker)
+# ==========================================
+class ChatInputEdit(QTextEdit):
+    send_requested = Signal()
+
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+            if event.modifiers() & Qt.ShiftModifier:
+                super().keyPressEvent(event)
+            else:
+                self.send_requested.emit()
+                event.accept()
+        else:
+            super().keyPressEvent(event)
+
+class InteractiveChatWorker(QThread):
+    chunk_received = Signal(str)
+    finished = Signal(str)
+    error = Signal(str)
+
+    def __init__(
+        self,
+        engine_mode: str,
+        model_name: str,
+        api_config: dict,
+        messages: List[Dict[str, str]],
+        system_prompt: str
+    ):
+        super().__init__()
+        self.engine_mode = engine_mode
+        self.model_name = model_name
+        self.api_config = api_config
+        self.messages = messages
+        self.system_prompt = system_prompt
+        self._is_cancelled = False
+
+    def cancel(self):
+        self._is_cancelled = True
+
+    def run(self):
+        full_reply = ""
+        try:
+            full_msgs = [{"role": "system", "content": self.system_prompt}] + self.messages
+            if self.engine_mode == "ollama":
+                response_stream = ollama.chat(
+                    model=self.model_name,
+                    messages=full_msgs,
+                    options={
+                        "temperature": 0.5,
+                        "top_p": 0.90,
+                        "repeat_penalty": 1.18,
+                        "repeat_last_n": 128
+                    },
+                    stream=True
+                )
+                for chunk in response_stream:
+                    if self._is_cancelled:
+                        break
+                    delta = chunk.get('message', {}).get('content', '')
+                    if delta:
+                        full_reply += delta
+                        self.chunk_received.emit(delta)
+            else:
+                api_url = self.api_config.get("api_url", "https://api.deepseek.com/v1").rstrip('/')
+                api_key = self.api_config.get("api_key", "").strip()
+                model = self.api_config.get("api_model", "deepseek-chat").strip()
+                if not api_key:
+                    raise ValueError("API Key not configured. Please open API Settings.")
+                endpoint = f"{api_url}/chat/completions"
+                headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+                payload = {
+                    "model": model,
+                    "messages": full_msgs,
+                    "temperature": 0.5,
+                    "stream": True
+                }
+                with httpx.Client(timeout=90.0) as client:
+                    with client.stream("POST", endpoint, headers=headers, json=payload) as response:
+                        if response.status_code != 200:
+                            err_body = response.read().decode('utf-8', errors='ignore')
+                            raise ValueError(f"API Error ({response.status_code}): {err_body}")
+                        for line in response.iter_lines():
+                            if self._is_cancelled:
+                                break
+                            if not line or not line.startswith("data: "):
+                                continue
+                            data_str = line[6:].strip()
+                            if data_str == "[DONE]":
+                                break
+                            try:
+                                c_json = json.loads(data_str)
+                                delta = c_json.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                                if delta:
+                                    full_reply += delta
+                                    self.chunk_received.emit(delta)
+                            except Exception:
+                                continue
+
+            self.finished.emit(full_reply)
+        except Exception as e:
+            self.error.emit(str(e))
+
+# ==========================================
 # 6. 建議卡片組件 (中英對照或純英文)
 # ==========================================
 class ResearchRecommendationCard(QFrame):
-    def __init__(self, rec: ResearchRecommendation, is_dark: bool = False, lang: str = "zh_TW"):
+    def __init__(self, rec: ResearchRecommendation, is_dark: bool = False, lang: str = "zh_TW", on_discuss_callback=None):
         super().__init__()
         self.rec = rec
         self.is_dark = is_dark
         self.lang = lang
+        self.on_discuss_callback = on_discuss_callback
         self.init_ui()
 
     def init_ui(self):
@@ -2017,6 +2157,19 @@ class ResearchRecommendationCard(QFrame):
         top_row.addWidget(type_badge)
         top_row.addWidget(sev_badge)
         top_row.addStretch()
+
+        if self.on_discuss_callback:
+            self.discuss_btn = QPushButton("💬 辯護 / 討論" if not is_en else "💬 Discuss / Rebuttal")
+            self.discuss_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #6366f1; color: #ffffff; border: none;
+                    border-radius: 4px; padding: 3px 10px; font-size: 11px; font-weight: bold;
+                }
+                QPushButton:hover { background-color: #4f46e5; }
+            """)
+            self.discuss_btn.clicked.connect(lambda: self.on_discuss_callback(self.rec))
+            top_row.addWidget(self.discuss_btn)
+
         layout.addLayout(top_row)
 
         box_css = f"QFrame {{ background-color: {box_bg}; border: 1px solid {box_border}; border-radius: 6px; padding: 6px; }} QLabel {{ border: none; background: transparent; color: {text_title}; }}"
@@ -2100,7 +2253,7 @@ class ResearchRecommendationCard(QFrame):
         layout.addWidget(impact_box)
 
 class IssueCard(QFrame):
-    def __init__(self, issue_idx: int, issue: IssueItem, on_option_selected_callback, is_dark: bool = False, lang: str = "zh_TW"):
+    def __init__(self, issue_idx: int, issue: IssueItem, on_option_selected_callback, is_dark: bool = False, lang: str = "zh_TW", on_discuss_callback=None):
         super().__init__()
         self.issue_idx = issue_idx
         self.issue = issue
@@ -2109,6 +2262,7 @@ class IssueCard(QFrame):
         self.option_buttons: List[QPushButton] = []
         self.is_dark = is_dark
         self.lang = lang
+        self.on_discuss_callback = on_discuss_callback
         self.init_ui()
 
     def init_ui(self):
@@ -2178,6 +2332,19 @@ class IssueCard(QFrame):
         top_row.addWidget(category_badge)
         top_row.addStretch()
         top_row.addWidget(severity_label)
+
+        if self.on_discuss_callback:
+            self.discuss_btn = QPushButton("💬 辯護 / 討論" if not is_en else "💬 Discuss / Rebuttal")
+            self.discuss_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #2563eb; color: #ffffff; border: none;
+                    border-radius: 4px; padding: 3px 10px; font-size: 11px; font-weight: bold;
+                }
+                QPushButton:hover { background-color: #1d4ed8; }
+            """)
+            self.discuss_btn.clicked.connect(lambda: self.on_discuss_callback(self.issue))
+            top_row.addWidget(self.discuss_btn)
+
         layout.addLayout(top_row)
 
         meaning_box = QFrame()
@@ -2343,6 +2510,13 @@ class AcademicReviewerApp(QMainWindow):
         self.preflight_timer.timeout.connect(self.run_preflight_analysis)
 
         self.current_preflight_matches: List[PreflightMatch] = []
+
+        # 互動辯護與對話狀態 (Interactive Discussion State)
+        self.chat_history: List[Dict[str, str]] = []
+        self.current_chat_context: Optional[Dict[str, Any]] = None
+        self.chat_worker: Optional[InteractiveChatWorker] = None
+        self.is_chat_generating: bool = False
+        self._active_streaming_text: str = ""
 
         self.init_ui()
         self.apply_language()
@@ -2545,23 +2719,30 @@ class AcademicReviewerApp(QMainWindow):
         self.splitter.addWidget(self.left_splitter)
 
         # ==========================================
-        # 中間欄位 (1/3)：垂直上下分割，上為實質建議與缺失分析，下為搭配詞替換選項
+        # 中間欄位 (1/3)：審查意見整合區（實證建議、搭配詞、句構與邏輯三合一）
         # ==========================================
-        self.middle_splitter = QSplitter(Qt.Vertical)
+        self.middle_widget = QWidget()
+        middle_layout = QVBoxLayout(self.middle_widget)
+        middle_layout.setContentsMargins(4, 0, 4, 0)
+        middle_layout.setSpacing(6)
 
-        # 審查實質建議與實證缺失分析
-        self.middle_top_widget = QWidget()
-        middle_top_layout = QVBoxLayout(self.middle_top_widget)
-        middle_top_layout.setContentsMargins(4, 0, 4, 4)
-        middle_top_layout.setSpacing(5)
-
-        self.recs_title_lbl = QLabel("審查實質建議與實證缺失分析")
-        self.recs_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
-        middle_top_layout.addWidget(self.recs_title_lbl)
-
+        # 頂部：綜合就緒度與主旨解析
         self.assessment_box = AcademicTextBrowser(is_dark=self.is_dark_mode, lang=self.ui_language)
         self.assessment_box.setMaximumHeight(130)
-        middle_top_layout.addWidget(self.assessment_box)
+        middle_layout.addWidget(self.assessment_box)
+
+        # 審查意見分類分頁標籤 (QTabWidget)
+        self.critique_tab_widget = QTabWidget()
+        self.critique_tab_widget.setFont(QFont("Segoe UI", 10))
+
+        # Tab 1: 實質建議與實證缺失分析
+        self.recs_page = QWidget()
+        recs_page_layout = QVBoxLayout(self.recs_page)
+        recs_page_layout.setContentsMargins(4, 4, 4, 4)
+        recs_page_layout.setSpacing(4)
+        self.recs_title_lbl = QLabel(t["recs_title"])
+        self.recs_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        recs_page_layout.addWidget(self.recs_title_lbl)
 
         self.recs_scroll_area = QScrollArea()
         self.recs_scroll_area.setWidgetResizable(True)
@@ -2570,19 +2751,16 @@ class AcademicReviewerApp(QMainWindow):
         self.recs_layout.setContentsMargins(0, 0, 0, 0)
         self.recs_layout.addStretch()
         self.recs_scroll_area.setWidget(self.recs_container)
-        middle_top_layout.addWidget(self.recs_scroll_area, 1)
+        recs_page_layout.addWidget(self.recs_scroll_area, 1)
 
-        self.middle_splitter.addWidget(self.middle_top_widget)
-
-        # 搭配詞替換選項與精準用詞編修
-        self.middle_bottom_widget = QWidget()
-        middle_bottom_layout = QVBoxLayout(self.middle_bottom_widget)
-        middle_bottom_layout.setContentsMargins(4, 4, 4, 0)
-        middle_bottom_layout.setSpacing(5)
-
-        self.colloc_title_lbl = QLabel("搭配詞替換選項與精準用詞編修")
+        # Tab 2: 搭配詞替換選項與精準用詞編修
+        self.colloc_page = QWidget()
+        colloc_page_layout = QVBoxLayout(self.colloc_page)
+        colloc_page_layout.setContentsMargins(4, 4, 4, 4)
+        colloc_page_layout.setSpacing(4)
+        self.colloc_title_lbl = QLabel(t["colloc_title"])
         self.colloc_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
-        middle_bottom_layout.addWidget(self.colloc_title_lbl)
+        colloc_page_layout.addWidget(self.colloc_title_lbl)
 
         self.colloc_scroll_area = QScrollArea()
         self.colloc_scroll_area.setWidgetResizable(True)
@@ -2591,24 +2769,16 @@ class AcademicReviewerApp(QMainWindow):
         self.colloc_layout.setContentsMargins(0, 0, 0, 0)
         self.colloc_layout.addStretch()
         self.colloc_scroll_area.setWidget(self.colloc_container)
-        middle_bottom_layout.addWidget(self.colloc_scroll_area, 1)
+        colloc_page_layout.addWidget(self.colloc_scroll_area, 1)
 
-        self.middle_splitter.addWidget(self.middle_bottom_widget)
-        self.middle_splitter.setSizes([450, 450])
-
-        self.splitter.addWidget(self.middle_splitter)
-
-        # ==========================================
-        # 右側欄位 (1/3)：全高，專門呈現文法句構、推論缺陷、修辭風格與邏輯矛盾
-        # ==========================================
-        self.right_widget = QWidget()
-        right_layout = QVBoxLayout(self.right_widget)
-        right_layout.setContentsMargins(4, 0, 0, 0)
-        right_layout.setSpacing(5)
-
-        self.discourse_title_lbl = QLabel("文法句構、推論缺陷、修辭風格與邏輯矛盾")
+        # Tab 3: 文法句構、推論缺陷、修辭風格與邏輯矛盾
+        self.discourse_page = QWidget()
+        discourse_page_layout = QVBoxLayout(self.discourse_page)
+        discourse_page_layout.setContentsMargins(4, 4, 4, 4)
+        discourse_page_layout.setSpacing(4)
+        self.discourse_title_lbl = QLabel(t["discourse_title"])
         self.discourse_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
-        right_layout.addWidget(self.discourse_title_lbl)
+        discourse_page_layout.addWidget(self.discourse_title_lbl)
 
         self.discourse_scroll_area = QScrollArea()
         self.discourse_scroll_area.setWidgetResizable(True)
@@ -2617,12 +2787,135 @@ class AcademicReviewerApp(QMainWindow):
         self.discourse_layout.setContentsMargins(0, 0, 0, 0)
         self.discourse_layout.addStretch()
         self.discourse_scroll_area.setWidget(self.discourse_container)
-        right_layout.addWidget(self.discourse_scroll_area, 1)
+        discourse_page_layout.addWidget(self.discourse_scroll_area, 1)
+
+        self.critique_tab_widget.addTab(self.recs_page, "💡 實證補強")
+        self.critique_tab_widget.addTab(self.colloc_page, "🔤 搭配詞選項")
+        self.critique_tab_widget.addTab(self.discourse_page, "⚖️ 句構與邏輯")
+        middle_layout.addWidget(self.critique_tab_widget, 1)
+
+        self.splitter.addWidget(self.middle_widget)
+
+        # ==========================================
+        # 右側欄位 (1/3)：雙態切換面板（審查進度監控 ➔ LLM 互動辯護工作台）
+        # ==========================================
+        self.right_widget = QWidget()
+        right_layout = QVBoxLayout(self.right_widget)
+        right_layout.setContentsMargins(4, 0, 0, 0)
+        right_layout.setSpacing(6)
+
+        self.right_stack = QStackedWidget()
+
+        # --- 狀態 0：審查進度監控頁面 (Live Progress & Stream Monitor) ---
+        self.monitor_page = QWidget()
+        mon_layout = QVBoxLayout(self.monitor_page)
+        mon_layout.setContentsMargins(0, 0, 0, 0)
+        mon_layout.setSpacing(6)
+
+        mon_header = QHBoxLayout()
+        self.monitor_title_lbl = QLabel("📡 智能審查執行監控")
+        self.monitor_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        mon_header.addWidget(self.monitor_title_lbl)
+        mon_header.addStretch()
+        self.monitor_badge_lbl = QLabel("就緒")
+        self.monitor_badge_lbl.setStyleSheet("color: #38bdf8; font-size: 11px;")
+        mon_header.addWidget(self.monitor_badge_lbl)
+        mon_layout.addLayout(mon_header)
+
+        self.live_stream_box = AcademicTextEdit(is_dark=self.is_dark_mode, lang=self.ui_language)
+        self.live_stream_box.setReadOnly(True)
+        self.live_stream_box.setFont(QFont("Consolas", 10))
+        self.live_stream_box.setPlaceholderText("模型審查產出即時監控：當點擊下方「開始智能審查」時，模型將在此逐字串流輸出批判分析與 JSON...")
+        mon_layout.addWidget(self.live_stream_box, 1)
+
+        self.right_stack.addWidget(self.monitor_page)  # Index 0
+
+        # --- 狀態 1：互動辯護與對話工作台 (Interactive Peer-Review Co-Pilot) ---
+        self.chat_page = QWidget()
+        chat_layout = QVBoxLayout(self.chat_page)
+        chat_layout.setContentsMargins(0, 0, 0, 0)
+        chat_layout.setSpacing(6)
+
+        # 對話頂部控制列 (Context Header)
+        chat_header = QHBoxLayout()
+        self.chat_context_chip = QLabel("🌐 全文綜合討論")
+        self.chat_context_chip.setFont(QFont("Segoe UI", 9, QFont.Bold))
+        self.chat_context_chip.setStyleSheet("background-color: #1e293b; color: #38bdf8; border: 1px solid #334155; border-radius: 4px; padding: 4px 8px;")
+        chat_header.addWidget(self.chat_context_chip, 1)
+
+        self.chat_switch_general_btn = QPushButton("🌐 全文討論")
+        self.chat_switch_general_btn.setFont(QFont("Segoe UI", 9))
+        self.chat_switch_general_btn.clicked.connect(self.switch_to_general_chat)
+        chat_header.addWidget(self.chat_switch_general_btn)
+
+        self.chat_clear_btn = QPushButton("🧹 清空")
+        self.chat_clear_btn.setFont(QFont("Segoe UI", 9))
+        self.chat_clear_btn.clicked.connect(self.clear_chat_history)
+        chat_header.addWidget(self.chat_clear_btn)
+        chat_layout.addLayout(chat_header)
+
+        # 對話歷史區域 (Chat History Browser)
+        self.chat_browser = QTextBrowser()
+        self.chat_browser.setOpenExternalLinks(False)
+        self.chat_browser.setFont(QFont("Segoe UI", 10))
+        chat_layout.addWidget(self.chat_browser, 1)
+
+        # 一鍵快捷辯護行動選鈕列 (Quick Action Pills)
+        self.quick_pills_frame = QFrame()
+        pills_layout = QHBoxLayout(self.quick_pills_frame)
+        pills_layout.setContentsMargins(0, 2, 0, 2)
+        pills_layout.setSpacing(4)
+
+        self.pill_defend_btn = QPushButton("🛡️ 領域慣用辯護")
+        self.pill_defend_btn.setFont(QFont("Segoe UI", 9))
+        self.pill_defend_btn.clicked.connect(lambda: self.send_quick_prompt("defend"))
+        pills_layout.addWidget(self.pill_defend_btn)
+
+        self.pill_top_tier_btn = QPushButton("✍️ 頂刊風格升級")
+        self.pill_top_tier_btn.setFont(QFont("Segoe UI", 9))
+        self.pill_top_tier_btn.clicked.connect(lambda: self.send_quick_prompt("top_tier"))
+        pills_layout.addWidget(self.pill_top_tier_btn)
+
+        self.pill_hedging_btn = QPushButton("🔬 語氣弱化防禦")
+        self.pill_hedging_btn.setFont(QFont("Segoe UI", 9))
+        self.pill_hedging_btn.clicked.connect(lambda: self.send_quick_prompt("hedging"))
+        pills_layout.addWidget(self.pill_hedging_btn)
+
+        self.pill_adopt_btn = QPushButton("🔄 產出替換句")
+        self.pill_adopt_btn.setFont(QFont("Segoe UI", 9))
+        self.pill_adopt_btn.clicked.connect(lambda: self.send_quick_prompt("adopt"))
+        pills_layout.addWidget(self.pill_adopt_btn)
+
+        chat_layout.addWidget(self.quick_pills_frame)
+
+        # 輸入列與發送按鈕
+        input_box_layout = QHBoxLayout()
+        input_box_layout.setSpacing(6)
+
+        self.chat_input = ChatInputEdit()
+        self.chat_input.setFixedHeight(50)
+        self.chat_input.setFont(QFont("Segoe UI", 10))
+        self.chat_input.setPlaceholderText("輸入訊息與審閱模型討論或辯護... (Enter 發送，Shift+Enter 換行)")
+        self.chat_input.send_requested.connect(self.on_chat_send_clicked)
+        input_box_layout.addWidget(self.chat_input, 1)
+
+        self.chat_send_btn = QPushButton("🚀 發送")
+        self.chat_send_btn.setFixedHeight(50)
+        self.chat_send_btn.setFixedWidth(75)
+        self.chat_send_btn.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self.chat_send_btn.setStyleSheet("background-color: #2563eb; color: #ffffff; border-radius: 6px;")
+        self.chat_send_btn.clicked.connect(self.on_chat_send_clicked)
+        input_box_layout.addWidget(self.chat_send_btn)
+
+        chat_layout.addLayout(input_box_layout)
+
+        self.right_stack.addWidget(self.chat_page)     # Index 1
+        right_layout.addWidget(self.right_stack, 1)
 
         self.splitter.addWidget(self.right_widget)
 
-        # 平分三欄 (各 1/3)
-        self.splitter.setSizes([500, 500, 520])
+        # 平分三欄 (各佔約 1/3: 480, 520, 520)
+        self.splitter.setSizes([480, 520, 520])
         self.main_layout.addWidget(self.splitter, 1)
 
         # ==========================================
@@ -2665,7 +2958,6 @@ class AcademicReviewerApp(QMainWindow):
         self.left_widget = self.left_splitter
         self.left_title_lbl = self.draft_title_lbl
         self.right_title_lbl = self.revised_title_lbl
-        self.middle_widget = self.middle_splitter
         self.middle_title_lbl = self.recs_title_lbl
         self.scroll_area = self.discourse_scroll_area
         self.cards_layout = self.discourse_layout
@@ -2761,6 +3053,43 @@ class AcademicReviewerApp(QMainWindow):
         self.review_btn.setText(t["btn_start_review"])
         self.sync_to_left_btn.setText(t["sync_left"])
         self.copy_btn.setText(t["copy_revised"])
+
+        # 中欄分頁標籤與數量徽章
+        if self.current_report:
+            rec_cnt = len(getattr(self.current_report, 'research_recommendations', []))
+            colloc_cnt = len([i for i in self.current_report.issues if i.category == "Collocation Defect"])
+            disc_cnt = len([i for i in self.current_report.issues if i.category != "Collocation Defect"])
+            self.critique_tab_widget.setTabText(0, f"💡 {'Evidence Defenses' if is_en else '實證補強'} ({rec_cnt})")
+            self.critique_tab_widget.setTabText(1, f"🔤 {'Collocations' if is_en else '搭配詞選項'} ({colloc_cnt})")
+            self.critique_tab_widget.setTabText(2, f"⚖️ {'Syntax & Logic' if is_en else '句構與邏輯'} ({disc_cnt})")
+        else:
+            self.critique_tab_widget.setTabText(0, t.get("tab_recs", "💡 實證補強"))
+            self.critique_tab_widget.setTabText(1, t.get("tab_colloc", "🔤 搭配詞選項"))
+            self.critique_tab_widget.setTabText(2, t.get("tab_discourse", "⚖️ 句構與邏輯"))
+
+        # 右欄監控頁面
+        self.monitor_title_lbl.setText(t.get("monitor_title", "📡 智能審查執行監控"))
+        if self.timer.isActive():
+            self.monitor_badge_lbl.setText(t.get("monitor_badge_running", "🔄 審查進行中..."))
+        else:
+            self.monitor_badge_lbl.setText(t.get("monitor_badge_ready", "就緒") if not self.current_report else t.get("monitor_badge_done", "✅ 審查完成"))
+
+        # 右欄互動辯護工作台
+        if not self.current_chat_context:
+            self.chat_context_chip.setText(t.get("chat_general_context", "🌐 全文綜合討論"))
+        self.chat_switch_general_btn.setText(t.get("chat_general_btn", "🌐 全文討論"))
+        self.chat_clear_btn.setText(t.get("chat_clear_btn", "🧹 清空"))
+        self.chat_input.setPlaceholderText(t.get("chat_input_placeholder", "輸入訊息與審閱模型討論或辯護... (Enter 發送，Shift+Enter 換行)"))
+        if not self.is_chat_generating:
+            self.chat_send_btn.setText(t.get("chat_send_btn", "🚀 發送"))
+
+        self.pill_defend_btn.setText(t.get("pill_defend", "🛡️ 領域慣用辯護"))
+        self.pill_top_tier_btn.setText(t.get("pill_top_tier", "✍️ 頂刊風格升級"))
+        self.pill_hedging_btn.setText(t.get("pill_hedging", "🔬 語氣弱化防禦"))
+        self.pill_adopt_btn.setText(t.get("pill_adopt", "🔄 產出替換句"))
+
+        if not self.chat_history:
+            self.init_chat_welcome_ui()
 
         if not self.current_report:
             self.assessment_box.setHtml(t["assessment_placeholder"])
@@ -2888,7 +3217,8 @@ class AcademicReviewerApp(QMainWindow):
                 QPushButton:hover {{ background-color: #334155; }}
             """
             for b in [self.refresh_btn, self.env_setup_btn, self.theme_btn, self.api_settings_btn,
-                      self.sync_to_left_btn, self.copy_btn, self.update_btn, self.lang_btn, self.load_sample_btn]:
+                      self.sync_to_left_btn, self.copy_btn, self.update_btn, self.lang_btn, self.load_sample_btn,
+                      self.chat_switch_general_btn, self.chat_clear_btn]:
                 b.setStyleSheet(btn_normal)
 
             self.quick_fix_btn.setStyleSheet("""
@@ -2906,9 +3236,92 @@ class AcademicReviewerApp(QMainWindow):
             for sa in [self.recs_scroll_area, self.colloc_scroll_area, self.discourse_scroll_area]:
                 sa.setStyleSheet("QScrollArea { border: none; background: transparent; }")
 
+            # 中欄分頁標籤樣式 (Dark)
+            self.critique_tab_widget.setStyleSheet(f"""
+                QTabWidget::pane {{
+                    border: 1px solid {border_col};
+                    border-radius: 6px;
+                    background-color: {bg_card};
+                }}
+                QTabBar::tab {{
+                    background-color: {bg_main};
+                    color: {text_sub};
+                    border: 1px solid {border_col};
+                    border-bottom: none;
+                    border-top-left-radius: 5px;
+                    border-top-right-radius: 5px;
+                    padding: 5px 12px;
+                    font-size: 11px;
+                    font-weight: bold;
+                    margin-right: 2px;
+                }}
+                QTabBar::tab:selected {{
+                    background-color: {bg_card};
+                    color: {text_main};
+                    border-bottom: 2px solid #3b82f6;
+                }}
+                QTabBar::tab:hover:!selected {{
+                    background-color: #334155;
+                }}
+            """)
+
+            # 右欄工作台組件樣式 (Dark)
+            self.monitor_badge_lbl.setStyleSheet("color: #38bdf8; font-size: 11px;")
+            self.chat_context_chip.setStyleSheet("background-color: #1e293b; color: #38bdf8; border: 1px solid #334155; border-radius: 4px; padding: 4px 8px;")
+            self.chat_browser.setStyleSheet(f"""
+                QTextBrowser {{
+                    background-color: {bg_card};
+                    color: {text_main};
+                    border: 1px solid {border_col};
+                    border-radius: 6px;
+                    padding: 6px;
+                }}
+            """)
+            self.chat_input.setStyleSheet(f"""
+                QTextEdit {{
+                    background-color: {bg_card};
+                    color: {text_main};
+                    border: 1px solid {border_col};
+                    border-radius: 6px;
+                    padding: 6px;
+                }}
+                QTextEdit:focus {{
+                    border: 1px solid #3b82f6;
+                }}
+            """)
+            pill_style_dark = f"""
+                QPushButton {{
+                    background-color: {bg_card};
+                    color: #cbd5e1;
+                    border: 1px solid {border_col};
+                    border-radius: 12px;
+                    padding: 3px 8px;
+                    font-size: 10px;
+                    font-weight: 500;
+                }}
+                QPushButton:hover {{
+                    background-color: #2563eb;
+                    color: #ffffff;
+                    border-color: #2563eb;
+                }}
+            """
+            for pill in [self.pill_defend_btn, self.pill_top_tier_btn, self.pill_hedging_btn, self.pill_adopt_btn]:
+                pill.setStyleSheet(pill_style_dark)
+
+            self.chat_send_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #2563eb; color: #ffffff; border: none; border-radius: 6px; font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #1d4ed8;
+                }
+                QPushButton:disabled {
+                    background-color: #475569; color: #94a3b8;
+                }
+            """)
+
             splitter_style = "QSplitter::handle { background-color: #334155; }"
             self.left_splitter.setStyleSheet(splitter_style)
-            self.middle_splitter.setStyleSheet(splitter_style)
             self.splitter.setStyleSheet(splitter_style)
         else:
             bg_main = "#f8fafc"
@@ -2946,7 +3359,8 @@ class AcademicReviewerApp(QMainWindow):
                 QPushButton:hover {{ background-color: #f1f5f9; }}
             """
             for b in [self.refresh_btn, self.env_setup_btn, self.theme_btn, self.api_settings_btn,
-                      self.sync_to_left_btn, self.copy_btn, self.update_btn, self.lang_btn, self.load_sample_btn]:
+                      self.sync_to_left_btn, self.copy_btn, self.update_btn, self.lang_btn, self.load_sample_btn,
+                      self.chat_switch_general_btn, self.chat_clear_btn]:
                 b.setStyleSheet(btn_normal)
 
             self.quick_fix_btn.setStyleSheet("""
@@ -2964,14 +3378,98 @@ class AcademicReviewerApp(QMainWindow):
             for sa in [self.recs_scroll_area, self.colloc_scroll_area, self.discourse_scroll_area]:
                 sa.setStyleSheet("QScrollArea { border: none; background: transparent; }")
 
+            # 中欄分頁標籤樣式 (Light)
+            self.critique_tab_widget.setStyleSheet(f"""
+                QTabWidget::pane {{
+                    border: 1px solid {border_col};
+                    border-radius: 6px;
+                    background-color: {bg_card};
+                }}
+                QTabBar::tab {{
+                    background-color: {bg_main};
+                    color: {text_sub};
+                    border: 1px solid {border_col};
+                    border-bottom: none;
+                    border-top-left-radius: 5px;
+                    border-top-right-radius: 5px;
+                    padding: 5px 12px;
+                    font-size: 11px;
+                    font-weight: bold;
+                    margin-right: 2px;
+                }}
+                QTabBar::tab:selected {{
+                    background-color: {bg_card};
+                    color: {text_main};
+                    border-bottom: 2px solid #2563eb;
+                }}
+                QTabBar::tab:hover:!selected {{
+                    background-color: #f1f5f9;
+                }}
+            """)
+
+            # 右欄工作台組件樣式 (Light)
+            self.monitor_badge_lbl.setStyleSheet("color: #0284c7; font-size: 11px;")
+            self.chat_context_chip.setStyleSheet("background-color: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; border-radius: 4px; padding: 4px 8px;")
+            self.chat_browser.setStyleSheet(f"""
+                QTextBrowser {{
+                    background-color: {bg_card};
+                    color: {text_main};
+                    border: 1px solid {border_col};
+                    border-radius: 6px;
+                    padding: 6px;
+                }}
+            """)
+            self.chat_input.setStyleSheet(f"""
+                QTextEdit {{
+                    background-color: {bg_card};
+                    color: {text_main};
+                    border: 1px solid {border_col};
+                    border-radius: 6px;
+                    padding: 6px;
+                }}
+                QTextEdit:focus {{
+                    border: 1px solid #2563eb;
+                }}
+            """)
+            pill_style_light = f"""
+                QPushButton {{
+                    background-color: #f8fafc;
+                    color: #334155;
+                    border: 1px solid {border_col};
+                    border-radius: 12px;
+                    padding: 3px 8px;
+                    font-size: 10px;
+                    font-weight: 500;
+                }}
+                QPushButton:hover {{
+                    background-color: #2563eb;
+                    color: #ffffff;
+                    border-color: #2563eb;
+                }}
+            """
+            for pill in [self.pill_defend_btn, self.pill_top_tier_btn, self.pill_hedging_btn, self.pill_adopt_btn]:
+                pill.setStyleSheet(pill_style_light)
+
+            self.chat_send_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #2563eb; color: #ffffff; border: none; border-radius: 6px; font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #1d4ed8;
+                }
+                QPushButton:disabled {
+                    background-color: #94a3b8; color: #f1f5f9;
+                }
+            """)
+
             splitter_style = "QSplitter::handle { background-color: #cbd5e1; }"
             self.left_splitter.setStyleSheet(splitter_style)
-            self.middle_splitter.setStyleSheet(splitter_style)
             self.splitter.setStyleSheet(splitter_style)
 
         self.update_legend_text()
         self.update_revised_article_view()
         self.run_preflight_analysis()
+        self.render_all_chat_messages(self._active_streaming_text)
 
     # --- 引擎選擇 ---
     def on_engine_mode_changed(self, idx: int):
@@ -3247,25 +3745,12 @@ class AcademicReviewerApp(QMainWindow):
     def setup_live_stream_console(self):
         is_en = (self.ui_language == "en_US")
 
-        # 1. 於右側欄位呈現全高串流監控控制台
-        label = QLabel("📡 Live Token Stream Monitor:" if is_en else "📡 即時輸出監控 (模型正於背景進行窮舉批判，保證非卡住):")
-        label.setStyleSheet("font-weight: bold; font-size: 11px; margin-bottom: 4px; color: #38bdf8;")
-        self.discourse_layout.addWidget(label)
+        # 1. 切換右側欄位至監控分頁 (Index 0) 並重設狀態
+        self.right_stack.setCurrentIndex(0)
+        self.live_stream_box.clear()
+        self.monitor_badge_lbl.setText("🔄 審查進行中..." if not is_en else "🔄 Reviewing...")
 
-        self.live_stream_box = AcademicTextEdit(is_dark=self.is_dark_mode, lang=self.ui_language)
-        self.live_stream_box.setReadOnly(True)
-        self.live_stream_box.setFont(QFont("Consolas", 10))
-        self.live_stream_box.setStyleSheet("""
-            QTextEdit {
-                background-color: #0f172a; color: #38bdf8; border: 1px solid #334155;
-                border-radius: 6px; padding: 10px; line-height: 1.4;
-            }
-        """)
-        self.live_stream_box.setPlaceholderText("Waiting for model stream tokens..." if is_en else "正在等待模型送出首個 Token...")
-        self.discourse_layout.addWidget(self.live_stream_box)
-        self.discourse_layout.addStretch()
-
-        # 2. 於中間上部與下部提供審查狀態指示
+        # 2. 於中間各分頁顯示進行中指示
         recs_hint = QLabel("⏳ 審查進行中：正在生成研究策略與實證缺失分析..." if not is_en else "⏳ Reviewing: generating strategic proposals and evidence gaps...")
         recs_hint.setStyleSheet("color: #a855f7; font-size: 11px; font-weight: bold; padding: 10px;")
         self.recs_layout.addWidget(recs_hint)
@@ -3275,6 +3760,11 @@ class AcademicReviewerApp(QMainWindow):
         colloc_hint.setStyleSheet("color: #10b981; font-size: 11px; font-weight: bold; padding: 10px;")
         self.colloc_layout.addWidget(colloc_hint)
         self.colloc_layout.addStretch()
+
+        discourse_hint = QLabel("⏳ 審查進行中：正在檢視文法句構、推論缺陷與邏輯矛盾..." if not is_en else "⏳ Reviewing: analyzing discourse structure, grammar and logic...")
+        discourse_hint.setStyleSheet("color: #3b82f6; font-size: 11px; font-weight: bold; padding: 10px;")
+        self.discourse_layout.addWidget(discourse_hint)
+        self.discourse_layout.addStretch()
 
     @Slot(str, int)
     def on_chunk_received(self, delta: str, chunk_count: int):
@@ -3321,9 +3811,8 @@ class AcademicReviewerApp(QMainWindow):
         self.assessment_box.setHtml(assessment_html)
 
         self.clear_cards()
-        self.live_stream_box = None
 
-        # 1. 渲染中欄上部：審查實質建議與實證缺失分析 (Research Recommendations)
+        # 1. 渲染中欄 Tab 1：審查實質建議與實證缺失分析 (Research Recommendations)
         recommendations = getattr(report, 'research_recommendations', [])
         if recommendations:
             rec_header_text = f"🔬 Strategic & Contextual Recommendations ({len(recommendations)} Items):" if is_en else f"🔬 審查員實質建議：上下文完整性與論證/實驗補強 ({len(recommendations)} 項):"
@@ -3332,7 +3821,7 @@ class AcademicReviewerApp(QMainWindow):
             self.recs_layout.addWidget(rec_header)
 
             for rec in recommendations:
-                rec_card = ResearchRecommendationCard(rec, is_dark=self.is_dark_mode, lang=self.ui_language)
+                rec_card = ResearchRecommendationCard(rec, is_dark=self.is_dark_mode, lang=self.ui_language, on_discuss_callback=self.open_chat_for_rec)
                 self.recs_layout.addWidget(rec_card)
         else:
             no_rec = QLabel("✨ Solid reasoning; no critical evidence gaps identified." if is_en else "✨ 論點完整嚴謹，未發現重大實證或方法缺失。")
@@ -3344,7 +3833,7 @@ class AcademicReviewerApp(QMainWindow):
         colloc_items = [(idx, issue) for idx, issue in enumerate(report.issues) if issue.category == "Collocation Defect"]
         discourse_items = [(idx, issue) for idx, issue in enumerate(report.issues) if issue.category != "Collocation Defect"]
 
-        # 2. 渲染中欄下部：搭配詞替換選項與精準用詞編修 (Collocations)
+        # 2. 渲染中欄 Tab 2：搭配詞替換選項與精準用詞編修 (Collocations)
         if colloc_items:
             c_header_text = f"🟢 Natural Collocations & Lexical Precision ({len(colloc_items)} Points):" if is_en else f"🟢 道地搭配詞替換與精準用詞 ({len(colloc_items)} 處):"
             c_header = QLabel(c_header_text)
@@ -3352,7 +3841,7 @@ class AcademicReviewerApp(QMainWindow):
             self.colloc_layout.addWidget(c_header)
 
             for idx, issue in colloc_items:
-                card = IssueCard(idx, issue, self.handle_option_selection, is_dark=self.is_dark_mode, lang=self.ui_language)
+                card = IssueCard(idx, issue, self.handle_option_selection, is_dark=self.is_dark_mode, lang=self.ui_language, on_discuss_callback=self.open_chat_for_issue)
                 self.colloc_layout.addWidget(card)
         else:
             no_colloc = QLabel("✨ Idiomatic and natural word pairings throughout." if is_en else "✨ 搭配詞自然道地，無明顯生硬用詞！")
@@ -3360,7 +3849,7 @@ class AcademicReviewerApp(QMainWindow):
             self.colloc_layout.addWidget(no_colloc)
         self.colloc_layout.addStretch()
 
-        # 3. 渲染右側欄位：文法句構、推論缺陷、修辭風格與邏輯矛盾 (Discourse, Logic & Grammar)
+        # 3. 渲染中欄 Tab 3：文法句構、推論缺陷、修辭風格與邏輯矛盾 (Discourse, Logic & Grammar)
         if discourse_items:
             d_header_text = f"✍️ Discourse, Logic, Rhetoric & Grammar Critiques ({len(discourse_items)} Points):" if is_en else f"✍️ 文法句構、推論缺陷、修辭風格與邏輯矛盾 ({len(discourse_items)} 處改進點):"
             d_header = QLabel(d_header_text)
@@ -3368,7 +3857,7 @@ class AcademicReviewerApp(QMainWindow):
             self.discourse_layout.addWidget(d_header)
 
             for idx, issue in discourse_items:
-                card = IssueCard(idx, issue, self.handle_option_selection, is_dark=self.is_dark_mode, lang=self.ui_language)
+                card = IssueCard(idx, issue, self.handle_option_selection, is_dark=self.is_dark_mode, lang=self.ui_language, on_discuss_callback=self.open_chat_for_issue)
                 self.discourse_layout.addWidget(card)
         else:
             no_disc = QLabel("✨ Flawless grammar and logically sound discourse." if is_en else "✨ 文法正確，論證嚴密，無邏輯或修辭缺陷！")
@@ -3376,7 +3865,18 @@ class AcademicReviewerApp(QMainWindow):
             self.discourse_layout.addWidget(no_disc)
         self.discourse_layout.addStretch()
 
+        # 4. 更新中欄 Tab 標題與數量徽章
+        self.critique_tab_widget.setTabText(0, f"💡 {'Evidence Defenses' if is_en else '實證補強'} ({len(recommendations)})")
+        self.critique_tab_widget.setTabText(1, f"🔤 {'Collocations' if is_en else '搭配詞選項'} ({len(colloc_items)})")
+        self.critique_tab_widget.setTabText(2, f"⚖️ {'Syntax & Logic' if is_en else '句構與邏輯'} ({len(discourse_items)})")
+
         self.update_revised_article_view()
+
+        # 5. 自動切換右側欄位至互動辯護與對話工作台 (Index 1)
+        self.right_stack.setCurrentIndex(1)
+        self.monitor_badge_lbl.setText("✅ 審查完成" if not is_en else "✅ Complete")
+        if not self.chat_history:
+            self.init_chat_welcome_ui()
 
     @Slot(str)
     def on_review_error(self, err_msg: str):
@@ -3528,6 +4028,466 @@ class AcademicReviewerApp(QMainWindow):
         msg = "Copied revised full text to clipboard!" if is_en else "已複製修訂後全文至剪貼簿！"
         self.status_banner.setText(msg)
         self.status_banner.setStyleSheet("color: #10b981; font-weight: bold; font-size: 11px;")
+
+    # ==========================================
+    # 互動式同儕審查辯護與對話工作台 (Interactive Peer-Review Co-Pilot Methods)
+    # ==========================================
+    def init_chat_welcome_ui(self):
+        is_en = (self.ui_language == "en_US")
+        dark = self.is_dark_mode
+        t_sub = "#94a3b8" if dark else "#64748b"
+        h_col = "#38bdf8" if dark else "#0284c7"
+
+        if is_en:
+            welcome_html = f"""
+            <div style='padding: 8px 4px; font-family: Segoe UI, sans-serif;'>
+                <h3 style='margin: 0 0 8px 0; color: {h_col}; font-size: 13px;'>💬 Peer-Review Discussion & Rebuttal Workbench</h3>
+                <p style='color: {t_sub}; font-size: 11px; line-height: 1.5;'>
+                    Collaborate and debate review feedback with your AI reviewer co-pilot.<br><br>
+                    💡 <b>How to interact:</b><br>
+                    1. Click <b>「💬 Discuss / Rebuttal」</b> on any critique card in the middle column to focus debate on that issue.<br>
+                    2. Click the quick action pills below (e.g., <b>🛡️ Defend (Domain Norm)</b>, <b>✍️ Top-Tier Style</b>, or <b>🔬 Hedging Defense</b>).<br>
+                    3. Ask any questions about journal rebuttal letters or phrasing in the input box below.
+                </p>
+            </div>
+            """
+        else:
+            welcome_html = f"""
+            <div style='padding: 8px 4px; font-family: Segoe UI, sans-serif;'>
+                <h3 style='margin: 0 0 8px 0; color: {h_col}; font-size: 13px;'>💬 學術審查互動辯護工作台 (Review Discussion & Rebuttal)</h3>
+                <p style='color: {t_sub}; font-size: 11px; line-height: 1.5;'>
+                    在此工作台，您可以與審閱模型進行深度互動，針對任何審查意見進行<b>專業辯護</b>、<b>頂刊風格升級</b>或<b>語氣弱化防禦</b>。<br><br>
+                    💡 <b>如何開始互動：</b><br>
+                    1. 點擊中欄任一卡片右上方的 <b>「💬 辯護 / 討論」</b> 按鈕，即可鎖定該項意見為討論焦點。<br>
+                    2. 點擊下方的快捷選鈕（如 <b>🛡️ 領域慣用辯護</b> 或 <b>✍️ 頂刊風格升級</b>），快速生成專業論據。<br>
+                    3. 在下方輸入框輸入任何問題，探討投稿回覆信（Rebuttal Letter）或改寫策略。
+                </p>
+            </div>
+            """
+        self.chat_browser.setHtml(welcome_html)
+
+    def open_chat_for_rec(self, rec: ResearchRecommendation):
+        is_en = (self.ui_language == "en_US")
+        self.right_stack.setCurrentIndex(1)
+        self.current_chat_context = {"type": "rec", "item": rec}
+        chip_text = f"🔬 {rec.action_type}" if len(rec.action_type) < 22 else f"🔬 {rec.action_type[:20]}..."
+        self.chat_context_chip.setText(chip_text)
+
+        gap_txt = rec.gap_identified_en if is_en else (rec.gap_identified_zh or rec.gap_identified_en)
+        prop_txt = rec.concrete_proposal_en if is_en else (rec.concrete_proposal_zh or rec.concrete_proposal_en)
+        if not is_en:
+            intro_content = (
+                f"🎯 **[已選定實質補強建議]**\n"
+                f"- **類型**: `{rec.action_type}` ({rec.severity})\n"
+                f"- **缺失分析**: {gap_txt}\n"
+                f"- **建議補做**: {prop_txt}\n\n"
+                f"💡 *您可以點擊下方快捷按鈕（如【🛡️ 領域慣用辯護】探討免補實驗的答辯策略），或在下方輸入具體想法進行推敲。*"
+            )
+        else:
+            intro_content = (
+                f"🎯 **[Selected Strategic Recommendation]**\n"
+                f"- **Type**: `{rec.action_type}` ({rec.severity})\n"
+                f"- **Evidence Gap**: {gap_txt}\n"
+                f"- **Proposed Action**: {prop_txt}\n\n"
+                f"💡 *Click a quick action pill below (e.g. 【🛡️ Defend (Domain Norm)】 to argue why this can be excused) or type your message.*"
+            )
+        self.chat_history.append({"role": "assistant", "content": intro_content})
+        self.render_all_chat_messages()
+        self.chat_input.setFocus()
+
+    def open_chat_for_issue(self, issue: IssueItem):
+        is_en = (self.ui_language == "en_US")
+        self.right_stack.setCurrentIndex(1)
+        self.current_chat_context = {"type": "issue", "item": issue}
+        orig_snip = issue.original_text[:18] + ("..." if len(issue.original_text) > 18 else "")
+        self.chat_context_chip.setText(f"🎯 {issue.category}: \"{orig_snip}\"")
+
+        comm_txt = issue.reviewer_comment_en if is_en else (issue.reviewer_comment_zh or issue.reviewer_comment_en)
+        if not is_en:
+            intro_content = (
+                f"🎯 **[已選定審查改進點]**\n"
+                f"- **類別**: `{issue.category}` ({issue.severity})\n"
+                f"- **原文片段**: \"{issue.original_text}\"\n"
+                f"- **審稿評語**: {comm_txt}\n\n"
+                f"💡 *您可以點擊下方快捷按鈕（如【🛡️ 領域慣用辯護】、【✍️ 頂刊風格升級】或【🔬 語氣弱化防禦】），或直接輸入訊息與我深入推敲。*"
+            )
+        else:
+            intro_content = (
+                f"🎯 **[Selected Critique Point]**\n"
+                f"- **Category**: `{issue.category}` ({issue.severity})\n"
+                f"- **Original Snippet**: \"{issue.original_text}\"\n"
+                f"- **Reviewer Critique**: {comm_txt}\n\n"
+                f"💡 *Click a quick action pill below (e.g. 【🛡️ Defend (Domain Norm)】, 【✍️ Top-Tier Style】, or 【🔬 Hedging Defense】) or type your message to begin.*"
+            )
+        self.chat_history.append({"role": "assistant", "content": intro_content})
+        self.render_all_chat_messages()
+        self.chat_input.setFocus()
+
+    def switch_to_general_chat(self):
+        self.current_chat_context = None
+        is_en = (self.ui_language == "en_US")
+        t = I18N.get(self.ui_language, I18N["zh_TW"])
+        self.chat_context_chip.setText(t.get("chat_general_context", "🌐 全文綜合討論"))
+        intro_msg = (
+            "🌐 **[已切換至全文綜合討論]**\n您現在可以針對整篇論文的架構、邏輯連貫性、投稿目標期刊的風格偏好、或撰寫整體 Rebuttal Letter 進行廣泛討論。"
+            if not is_en else
+            "🌐 **[Switched to General Full-Text Discussion]**\nYou can now discuss manuscript structure, overall narrative flow, journal selection considerations, or general rebuttal strategies."
+        )
+        self.chat_history.append({"role": "assistant", "content": intro_msg})
+        self.render_all_chat_messages()
+        self.chat_input.setFocus()
+
+    def clear_chat_history(self):
+        if self.chat_worker and self.is_chat_generating:
+            self.chat_worker.cancel()
+        self.is_chat_generating = False
+        self.chat_history = []
+        self._active_streaming_text = ""
+        self.chat_send_btn.setEnabled(True)
+        is_en = (self.ui_language == "en_US")
+        t = I18N.get(self.ui_language, I18N["zh_TW"])
+        self.chat_send_btn.setText(t.get("chat_send_btn", "🚀 發送"))
+        self.init_chat_welcome_ui()
+
+    def build_chat_system_prompt(self) -> str:
+        is_en = (self.ui_language == "en_US")
+        mode_data = WRITING_MODES.get(self.writing_mode, WRITING_MODES["academic"])
+        persona = mode_data.get("persona_en" if is_en else "persona_zh", "Senior Academic Peer Reviewer and Editor")
+
+        draft_sample = self.text_editor.toPlainText()[:1500]
+
+        context_desc = ""
+        if self.current_chat_context:
+            ctx_type = self.current_chat_context.get("type")
+            item = self.current_chat_context.get("item")
+            if ctx_type == "rec" and isinstance(item, ResearchRecommendation):
+                context_desc = f"""
+CURRENT FOCUSED RECOMMENDATION:
+- Action Type: {item.action_type}
+- Severity: {item.severity}
+- Gap Analysis: {item.gap_identified_en} (ZH: {item.gap_identified_zh})
+- Proposed Action: {item.concrete_proposal_en} (ZH: {item.concrete_proposal_zh})
+- Acceptance Impact: {item.impact_on_acceptance_en} (ZH: {item.impact_on_acceptance_zh})
+"""
+            elif ctx_type == "issue" and isinstance(item, IssueItem):
+                options_summary = "\n".join([f"  * Option {chr(65+idx)} ({opt.style_label}): \"{opt.revised_text}\" - Rationale: {opt.rationale_en}" for idx, opt in enumerate(item.revision_options)])
+                context_desc = f"""
+CURRENT FOCUSED CRITIQUE POINT:
+- Category: {item.category}
+- Severity: {item.severity}
+- Original Text: "{item.original_text}"
+- Meaning Analysis: {item.meaning_analysis_en}
+- Reviewer Critique: {item.reviewer_comment_en} (ZH: {item.reviewer_comment_zh})
+- Available Options:
+{options_summary}
+"""
+
+        if is_en:
+            sys_prompt = f"""You are an elite, highly constructive Academic Co-Pilot and Senior Peer Reviewer ({persona}).
+You are pair-collaborating with an author to polish their manuscript, debate reviewer critiques, formulate polite and persuasive rebuttal letter arguments, craft academic hedging defenses, and refine prose to top-tier journal standards (e.g., Nature, Science, Cell, IEEE Transactions, ACM).
+
+AUTHOR'S WRITING REGISTER & SECTION:
+- Writing Mode: {mode_data.get('name_en')}
+- Target Scope: {self.context_scope}
+
+{context_desc}
+
+DRAFT EXCERPT FOR CONTEXT:
+\"\"\"{draft_sample}\"\"\"
+
+GUIDELINES:
+1. Always maintain a collegial, constructive, and intellectually rigorous tone.
+2. If the author wants to DEFEND their phrasing or study design, evaluate whether the defense is scientifically sound and provide persuasive, courteous phrasing suitable for a Point-by-Point Rebuttal Letter.
+3. If the author asks for HEDGING, provide nuanced academic hedging (e.g., "These observations lend credence to the hypothesis that...", "While not definitive, the data strongly imply...").
+4. If the author requests TOP-TIER JOURNAL STYLE, deliver concise, punchy, high-impact academic English with sophisticated syntax and flawless collocation.
+5. Provide actionable revision suggestions with clear explanations.
+6. Reply in English with crystal-clear markdown formatting (bolding key terms, using code blocks for suggested sentences).
+"""
+        else:
+            sys_prompt = f"""你是一位頂級學術同儕審閱與改寫專家（{persona}）。
+你正在與論文作者共同推敲、討論審查意見，協助作者進行「專業辯護」、「審稿意見回覆信（Point-by-Point Rebuttal）」、「頂級期刊風格升級（如 Nature, IEEE, Cell, Science 等）」以及「語氣弱化防禦（Academic Hedging）」。
+
+作者目前的寫作設定：
+- 寫作情境：{mode_data.get('name_zh')}
+- 審查範圍：{self.context_scope}
+
+{context_desc}
+
+作者原始草稿片段供背景參考：
+\"\"\"{draft_sample}\"\"\"
+
+你的核心職責與應對原則：
+1. 保持專業、建設性且嚴謹的學術對話態度。
+2. 當作者想要【辯護（Rebuttal）】原寫法或實驗時：
+   - 評估該辯護在該學術領域是否站得住腳。
+   - 若站得住腳，協助作者撰寫委婉、禮貌且具說服力的回覆信（Rebuttal Letter）句子，向審稿員清楚解釋領域慣例或研究範圍局限。
+   - 若站不住腳，客觀指出潛在風險，並提供折衷改寫方案。
+3. 當作者想要【語氣弱化（Hedging）】時：
+   - 提供 2~3 種不同防禦強度的學術弱化句型（如 "These findings suggest...", "It is conceivable that..."），避免被 Reviewer 指責為 Overclaiming。
+4. 當作者想要【頂刊風格升級】時：
+   - 產出極具權威感、行文精煉且結構緊湊的頂級期刊句構。
+5. 請主要使用正體中文進行解說與策略分析，但在提供修訂建議句或 Rebuttal 範例句時，提供高水準的道地英文。排版採用清晰的 Markdown 格式。
+"""
+        return sys_prompt.strip()
+
+    def on_chat_send_clicked(self):
+        text = self.chat_input.toPlainText()
+        self.send_chat_message(text)
+
+    def send_chat_message(self, user_text: str):
+        if not user_text or not user_text.strip():
+            return
+        if self.is_chat_generating:
+            return
+
+        is_en = (self.ui_language == "en_US")
+        model_name = self.model_combo.currentText().strip()
+        if self.engine_mode == "ollama":
+            if not model_name or "未找到" in model_name or "未啟動" in model_name or "No models" in model_name:
+                QMessageBox.warning(self, "Notice" if is_en else "提示", "Please select a valid local Ollama model." if is_en else "請先確認已選擇本機模型。")
+                return
+        else:
+            if not self.config.get("api_key"):
+                QMessageBox.warning(self, "Notice" if is_en else "提示", "Please configure your API Key first." if is_en else "請先點擊上方「⚙️ API 設定」輸入線上 API Key。")
+                self.open_api_settings()
+                return
+
+        clean_text = user_text.strip()
+        self.chat_history.append({"role": "user", "content": clean_text})
+        self.chat_input.clear()
+
+        self.is_chat_generating = True
+        self._active_streaming_text = ""
+        self.chat_send_btn.setEnabled(False)
+        self.chat_send_btn.setText("⏳...")
+
+        sys_prompt = self.build_chat_system_prompt()
+
+        self.chat_worker = InteractiveChatWorker(
+            engine_mode=self.engine_mode,
+            model_name=model_name if self.engine_mode == "ollama" else self.config.get("api_model", "deepseek-chat"),
+            api_config=self.config,
+            system_prompt=sys_prompt,
+            messages=self.chat_history
+        )
+        self.chat_worker.chunk_received.connect(self.on_chat_chunk_received)
+        self.chat_worker.finished.connect(self.on_chat_finished)
+        self.chat_worker.error.connect(self.on_chat_error)
+        self.chat_worker.start()
+
+        self.render_all_chat_messages()
+
+    @Slot(str)
+    def on_chat_chunk_received(self, delta: str):
+        self._active_streaming_text += delta
+        self.render_all_chat_messages(self._active_streaming_text)
+
+    @Slot(str)
+    def on_chat_finished(self, full_reply: str):
+        self.is_chat_generating = False
+        self.chat_history.append({"role": "assistant", "content": full_reply})
+        self._active_streaming_text = ""
+        self.chat_send_btn.setEnabled(True)
+        is_en = (self.ui_language == "en_US")
+        t = I18N.get(self.ui_language, I18N["zh_TW"])
+        self.chat_send_btn.setText(t.get("chat_send_btn", "🚀 發送"))
+        self.render_all_chat_messages()
+
+    @Slot(str)
+    def on_chat_error(self, err_msg: str):
+        self.is_chat_generating = False
+        self.chat_history.append({"role": "assistant", "content": f"⚠️ **Error**: {err_msg}"})
+        self._active_streaming_text = ""
+        self.chat_send_btn.setEnabled(True)
+        is_en = (self.ui_language == "en_US")
+        t = I18N.get(self.ui_language, I18N["zh_TW"])
+        self.chat_send_btn.setText(t.get("chat_send_btn", "🚀 發送"))
+        self.render_all_chat_messages()
+
+    def send_quick_prompt(self, action: str):
+        is_en = (self.ui_language == "en_US")
+        ctx = self.current_chat_context
+        if action == "defend":
+            if ctx and ctx.get("type") == "rec":
+                text = (
+                    "針對這項實質補強建議，由於實驗資源或論文篇幅限制無法立即補做，請教我如何在論文討論段（Discussion）中進行嚴密的防禦性說明（Limitation defense），並為我撰寫一段委婉禮貌的審查回覆信範例（Rebuttal response）。"
+                    if not is_en else
+                    "Regarding this strategic recommendation, due to experimental or page constraints, we cannot conduct this additional experiment. Please advise on how to formulate a defensible limitation discussion in the paper and draft a courteous point-by-point rebuttal response."
+                )
+            elif ctx and ctx.get("type") == "issue":
+                issue: IssueItem = ctx.get("item")
+                text = (
+                    f"針對此處被挑出的問題（\"{issue.original_text}\"），我想堅持保留作者原有的寫法或表達邏輯。請幫我從領域專業慣例的角度，評估其可行性，並撰寫一份委婉而堅定的審查意見回覆（Rebuttal statement）。"
+                    if not is_en else
+                    f"Regarding the critique on \"{issue.original_text}\", I would like to defend and retain my original phrasing. Please evaluate whether this is justifiable by domain conventions and draft a polite, persuasive rebuttal statement."
+                )
+            else:
+                text = (
+                    "請針對目前的審查意見，提供投稿回覆信（Point-by-Point Rebuttal Letter）的通用攻防策略與禮貌應對範本。"
+                    if not is_en else
+                    "Please provide strategic advice and a polite template for responding to peer-review critiques in a point-by-point rebuttal letter."
+                )
+        elif action == "top_tier":
+            if ctx and ctx.get("type") == "issue":
+                issue: IssueItem = ctx.get("item")
+                text = (
+                    f"請將「{issue.original_text}」以頂級期刊（如 Nature, IEEE TPAMI, Cell）的高權威度、精煉行文風格進行升級重寫，提供 2 個最具學術影響力的修訂句。"
+                    if not is_en else
+                    f"Please elevate \"{issue.original_text}\" to a top-tier journal standard (e.g., Nature, IEEE TPAMI). Provide 2 high-impact, refined alternative sentences."
+                )
+            else:
+                text = (
+                    "請針對我當前的草稿重點，指出最能提升至頂刊風格（Top-tier journal style）的關鍵修辭與句構升級建議。"
+                    if not is_en else
+                    "Please highlight key rhetorical and stylistic upgrades in my draft to elevate it to a top-tier journal caliber."
+                )
+        elif action == "hedging":
+            if ctx and ctx.get("type") == "issue":
+                issue: IssueItem = ctx.get("item")
+                text = (
+                    f"此處原文「{issue.original_text}」是否可能有過度宣稱（Overclaiming）或語氣過於武斷的風險？請為我提供 3 種不同程度的學術語氣弱化（Academic Hedging）改寫方案。"
+                    if not is_en else
+                    f"Does the original phrasing \"{issue.original_text}\" risk overclaiming? Please provide 3 levels of academic hedging rewrites to moderate the claim safely."
+                )
+            else:
+                text = (
+                    "請檢視我草稿中的主張與結論，提供常用的學術語氣弱化（Academic Hedging）句型與防禦建議，以避免審稿員質疑。"
+                    if not is_en else
+                    "Please review assertions in my draft and suggest standard academic hedging techniques to preempt reviewer skepticism."
+                )
+        elif action == "adopt":
+            if ctx and ctx.get("type") == "issue":
+                issue: IssueItem = ctx.get("item")
+                text = (
+                    f"請針對「{issue.original_text}」直接產出 3 個可直接替換的最佳修訂句子，並分別標注各自適合的語境與修辭優勢。"
+                    if not is_en else
+                    f"Please generate 3 drop-in replacement sentences for \"{issue.original_text}\", annotating the specific context and stylistic advantage of each."
+                )
+            else:
+                text = (
+                    "請為目前審查中最重要的 3 處問題，產出立即可替換的改寫句對照表。"
+                    if not is_en else
+                    "Please generate a table of drop-in alternative sentences for the most critical issues identified in the review."
+                )
+        else:
+            text = action
+
+        self.send_chat_message(text)
+
+    def render_all_chat_messages(self, current_streaming_delta: str = ""):
+        is_en = (self.ui_language == "en_US")
+        dark = self.is_dark_mode
+
+        if dark:
+            user_bg = "#1e3a8a"
+            user_border = "#2563eb"
+            user_title = "#93c5fd"
+            user_text = "#eff6ff"
+
+            asst_bg = "#1e293b"
+            asst_border = "#334155"
+            asst_title = "#38bdf8"
+            asst_text = "#f8fafc"
+        else:
+            user_bg = "#eff6ff"
+            user_border = "#bfdbfe"
+            user_title = "#1d4ed8"
+            user_text = "#1e293b"
+
+            asst_bg = "#f8fafc"
+            asst_border = "#e2e8f0"
+            asst_title = "#0284c7"
+            asst_text = "#0f172a"
+
+        html_blocks = []
+
+        for msg in self.chat_history:
+            role = msg.get("role", "user")
+            raw_content = msg.get("content", "")
+            formatted = self.format_markdown_for_browser(raw_content)
+
+            if role == "user":
+                block = f"""
+                <div style='margin: 8px 0; padding: 8px 12px; background-color: {user_bg}; border: 1px solid {user_border}; border-radius: 8px;'>
+                    <div style='font-size: 11px; font-weight: bold; color: {user_title}; margin-bottom: 4px;'>{'👤 Author / You:' if is_en else '👤 作者 (您)：'}</div>
+                    <div style='font-size: 12px; color: {user_text}; line-height: 1.45;'>{formatted}</div>
+                </div>
+                """
+            else:
+                block = f"""
+                <div style='margin: 8px 0; padding: 8px 12px; background-color: {asst_bg}; border: 1px solid {asst_border}; border-radius: 8px;'>
+                    <div style='font-size: 11px; font-weight: bold; color: {asst_title}; margin-bottom: 4px;'>{'🦙 Reviewer Co-Pilot:' if is_en else '🦙 審稿與辯護顧問 (Co-Pilot)：'}</div>
+                    <div style='font-size: 12px; color: {asst_text}; line-height: 1.45;'>{formatted}</div>
+                </div>
+                """
+            html_blocks.append(block)
+
+        if current_streaming_delta:
+            formatted_stream = self.format_markdown_for_browser(current_streaming_delta)
+            stream_block = f"""
+            <div style='margin: 8px 0; padding: 8px 12px; background-color: {asst_bg}; border: 1px solid #38bdf8; border-radius: 8px;'>
+                <div style='font-size: 11px; font-weight: bold; color: #38bdf8; margin-bottom: 4px;'>{'🦙 Reviewer Co-Pilot (Generating...):' if is_en else '🦙 審稿與辯護顧問 (正在思考生成...):'}</div>
+                <div style='font-size: 12px; color: {asst_text}; line-height: 1.45;'>{formatted_stream} <span style='color: #38bdf8; font-weight: bold;'>▋</span></div>
+            </div>
+            """
+            html_blocks.append(stream_block)
+
+        full_html = "".join(html_blocks)
+        self.chat_browser.setHtml(full_html)
+
+        cursor = self.chat_browser.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        self.chat_browser.setTextCursor(cursor)
+        self.chat_browser.ensureCursorVisible()
+
+    def format_markdown_for_browser(self, text: str) -> str:
+        if not text:
+            return ""
+        dark = self.is_dark_mode
+        code_bg = "#0f172a" if dark else "#e2e8f0"
+        code_fg = "#38bdf8" if dark else "#0369a1"
+        quote_border = "#3b82f6"
+        quote_bg = "#1e293b" if dark else "#f1f5f9"
+
+        def replace_code_block(match):
+            code = match.group(1)
+            escaped_code = html.escape(code.strip())
+            return f"<pre style='background-color: {code_bg}; color: {code_fg}; padding: 8px; border-radius: 4px; font-family: Consolas, monospace; font-size: 11px; margin: 4px 0;'>{escaped_code}</pre>"
+
+        res = re.sub(r'```(?:[\w]*\n)?(.*?)```', replace_code_block, text, flags=re.DOTALL)
+
+        lines = res.split('\n')
+        processed_lines = []
+        in_code_block = False
+
+        for line in lines:
+            if "<pre " in line:
+                in_code_block = True
+            if "</pre>" in line:
+                in_code_block = False
+                processed_lines.append(line)
+                continue
+
+            if in_code_block:
+                processed_lines.append(line)
+                continue
+
+            l_str = line
+
+            if l_str.startswith('&gt; ') or l_str.startswith('> '):
+                quote_content = l_str[l_str.find(' ') + 1:]
+                l_str = f"<div style='border-left: 3px solid {quote_border}; background-color: {quote_bg}; padding: 4px 8px; margin: 3px 0;'>{quote_content}</div>"
+            elif re.match(r'^\s*[-*]\s+', l_str):
+                l_str = re.sub(r'^\s*[-*]\s+', '• ', l_str)
+                l_str = f"<div style='margin-left: 10px;'>{l_str}</div>"
+
+            l_str = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', l_str)
+            l_str = re.sub(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)', r'<i>\1</i>', l_str)
+            l_str = re.sub(r'`([^`]+)`', f"<code style='background-color: {code_bg}; color: {code_fg}; padding: 1px 4px; border-radius: 3px; font-family: Consolas, monospace; font-size: 11px;'>\\1</code>", l_str)
+
+            processed_lines.append(l_str)
+
+        return "<br>".join(processed_lines)
 
 def main():
     app = QApplication(sys.argv)
