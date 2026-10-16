@@ -26,8 +26,9 @@ from academic_nlp_pipeline import (
 )
 
 APP_VERSION = "0.9.3"
-DEFAULT_UPDATE_URL = "https://raw.githubusercontent.com/Chars1008/LibreLlama-Lab-Editor/main/version.json"
-FALLBACK_UPDATE_URL = "https://raw.githubusercontent.com/Chars1008/LibreLlama-Reviewer/main/version.json"
+DEFAULT_UPDATE_URL = "https://raw.githubusercontent.com/Chars1008/LibreLabLlama-Editor/main/version.json"
+FALLBACK_UPDATE_URL = "https://raw.githubusercontent.com/Chars1008/LibreLlama-Lab-Editor/main/version.json"
+FALLBACK_UPDATE_URL_2 = "https://raw.githubusercontent.com/Chars1008/LibreLlama-Reviewer/main/version.json"
 CONFIG_FILE = "app_config.json"
 
 # ==========================================
@@ -1264,11 +1265,12 @@ class UpdateCheckWorker(QThread):
                 else:
                     url_to_use = DEFAULT_UPDATE_URL
 
-            # 2. 透過遠端 HTTP(S) 查詢（支援 Primary 與 Fallback 雙軌切換）
+            # 2. 透過遠端 HTTP(S) 查詢（支援 Primary 與 Fallback 多軌切換）
             if data is None:
                 candidates = [url_to_use]
-                if url_to_use == DEFAULT_UPDATE_URL and FALLBACK_UPDATE_URL != DEFAULT_UPDATE_URL:
-                    candidates.append(FALLBACK_UPDATE_URL)
+                for fb in [FALLBACK_UPDATE_URL, FALLBACK_UPDATE_URL_2]:
+                    if fb not in candidates:
+                        candidates.append(fb)
 
                 last_err = ""
                 for target in candidates:
