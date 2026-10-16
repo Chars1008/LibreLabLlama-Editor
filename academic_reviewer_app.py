@@ -2292,6 +2292,7 @@ class AcademicReviewerApp(QMainWindow):
         self.apply_theme()
 
     def init_ui(self):
+        t = I18N.get(self.ui_language, I18N["zh_TW"])
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.main_layout = QVBoxLayout(self.central_widget)
