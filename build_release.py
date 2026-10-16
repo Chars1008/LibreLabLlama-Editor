@@ -127,10 +127,19 @@ def main():
     if not os.path.exists(final_setup_exe):
         raise FileNotFoundError(f"Setup installer not found: {final_setup_exe}")
 
+    # 7. Also place a copy directly in project root for easy user access
+    root_setup_exe = os.path.join(PROJECT_DIR, f"{SETUP_NAME}.exe")
+    try:
+        shutil.copy2(final_setup_exe, root_setup_exe)
+        print(f"[+] Placed root copy for quick access: {root_setup_exe}")
+    except Exception as e:
+        print(f"    Notice: could not copy to root: {e}")
+
     setup_size_mb = os.path.getsize(final_setup_exe) / (1024 * 1024)
     print("\n==================================================")
     print(f"[SUCCESS] BUILD COMPLETED SUCCESSFULLY!")
     print(f"    Target: {final_setup_exe}")
+    print(f"    Root:   {root_setup_exe}")
     print(f"    Size:   {setup_size_mb:.2f} MB")
     print("==================================================")
 
