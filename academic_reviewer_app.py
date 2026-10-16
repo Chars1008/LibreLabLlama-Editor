@@ -1667,6 +1667,8 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
 一個句子若同時存在「詞彙搭配生硬（如 make an experiment）」與「文法結構錯誤（如缺少主詞/時態矛盾）」或「邏輯推論漏洞（如過度斷言 without any other factors）」，你【必須同時分開提出】！
 絕不能因為該句已在 `collocation_issues` 中被挑出，就在 `discourse_issues` 中忽略整句的結構或邏輯問題！兩者必須並存！
 
+【精簡精確輸出原則】：每處評語與分析請保持精煉（1~2 句話即可），切勿重複贅述相同觀點，嚴防產生冗長循環。
+
 【格式規範】：請確保輸出為符合 Schema 的合法 JSON。"""
 
         return prompt
@@ -1675,6 +1677,7 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
         system_prompt = self.build_system_prompt()
         full_content = ""
         chunk_count = 0
+        salvaged_after_abort = False
 
         try:
             if self.engine_mode == "ollama":
@@ -1685,15 +1688,40 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
                         {"role": "user", "content": f"Please critically and exhaustively review the following text:\n\n{self.text}"}
                     ],
                     format=AcademicReviewReport.model_json_schema(),
-                    options={"temperature": 0.35, "num_ctx": 16384, "num_predict": -1},
+                    options={
+                        "temperature": 0.45,
+                        "top_p": 0.90,
+                        "top_k": 40,
+                        "repeat_penalty": 1.18,
+                        "repeat_last_n": 128,
+                        "num_ctx": 16384,
+                        "num_predict": -1
+                    },
                     stream=True
                 )
-                for chunk in response_stream:
-                    delta = chunk.get('message', {}).get('content', '')
-                    if delta:
-                        full_content += delta
-                        chunk_count += 1
-                        self.chunk_received.emit(delta, chunk_count)
+                try:
+                    for chunk in response_stream:
+                        delta = chunk.get('message', {}).get('content', '')
+                        if delta:
+                            full_content += delta
+                            chunk_count += 1
+                            self.chunk_received.emit(delta, chunk_count)
+
+                            # 即時檢測退化循環 (Degenerate Repetition Detection)
+                            # 若結尾有 2~15 字元的模式重複超過 6 次，或單一字元重複超過 12 次，提早截斷串流以防崩潰
+                            if len(full_content) > 80:
+                                if re.search(r'(.{2,15}?)\1{6,}$', full_content) or re.search(r'(.)\1{12,}$', full_content):
+                                    print("[ReviewWorker] Degenerate repetition detected in Ollama stream, breaking early to salvage JSON.")
+                                    salvaged_after_abort = True
+                                    break
+                except Exception as stream_err:
+                    err_msg = str(stream_err).lower()
+                    # 捕捉 Ollama/llama.cpp 的 token repeat limit 或 status code -1 中斷
+                    if ("repeat limit" in err_msg or "prediction aborted" in err_msg or "status code: -1" in err_msg or "-1" in err_msg) and len(full_content) > 60:
+                        print(f"[ReviewWorker] Intercepted Ollama stream abort: {stream_err}. Salvaging {len(full_content)} chars.")
+                        salvaged_after_abort = True
+                    else:
+                        raise
             else:
                 api_url = self.api_config.get("api_url", "https://api.deepseek.com/v1").rstrip('/')
                 api_key = self.api_config.get("api_key", "").strip()
@@ -1712,7 +1740,7 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
                         {"role": "system", "content": prompt_with_schema},
                         {"role": "user", "content": f"Please critically and exhaustively review the following text:\n\n{self.text}"}
                     ],
-                    "temperature": 0.35,
+                    "temperature": 0.45,
                     "stream": True,
                     "response_format": {"type": "json_object"}
                 }
@@ -1737,8 +1765,18 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
                                         full_content += delta
                                         chunk_count += 1
                                         self.chunk_received.emit(delta, chunk_count)
+
+                                        if len(full_content) > 80:
+                                            if re.search(r'(.{2,15}?)\1{6,}$', full_content) or re.search(r'(.)\1{12,}$', full_content):
+                                                print("[ReviewWorker] Degenerate repetition detected in API stream, breaking early.")
+                                                salvaged_after_abort = True
+                                                break
                                 except Exception:
                                     continue
+
+            # 清除結尾退化重複文字（如 ackackackack... 或 aaaaaa...）
+            full_content = re.sub(r'(.{2,15}?)\1{4,}$', '', full_content)
+            full_content = re.sub(r'(.)\1{8,}$', '', full_content)
 
             raw_content = full_content.strip()
             if raw_content.startswith("```json"):
@@ -1753,6 +1791,9 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
             try:
                 data = json.loads(raw_content, strict=False)
             except Exception:
+                pass
+
+            if data is None or not isinstance(data, dict):
                 try:
                     repaired = json_repair.repair_json(raw_content, return_objects=True)
                     if isinstance(repaired, dict):
@@ -1762,6 +1803,20 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
 
             if not data or not isinstance(data, dict):
                 raise ValueError(f"Could not parse model JSON response.\nFragment:\n{raw_content[-200:]}")
+
+            if salvaged_after_abort:
+                note_zh = "（系統提示：模型尾段因字詞重複提早終止，系統已自動修復並呈現完整審查建議）"
+                note_en = " (System Note: Output stream was auto-repaired to prevent token repetition loop)"
+                curr_zh = str(data.get('overall_assessment_zh') or '')
+                curr_en = str(data.get('overall_assessment_en') or '')
+                if curr_zh:
+                    data['overall_assessment_zh'] = f"{curr_zh}\n{note_zh}"
+                else:
+                    data['overall_assessment_zh'] = f"審查已完成。{note_zh}"
+                if curr_en:
+                    data['overall_assessment_en'] = f"{curr_en}\n{note_en}"
+                else:
+                    data['overall_assessment_en'] = f"Review completed.{note_en}"
 
             # 數據容錯與補齊：雙軌獨立解析與中英雙語評論 100% 健全保證
             def has_cjk(s: str) -> bool:
