@@ -99,15 +99,13 @@
 
 ## 📦 使用與啟動方式
 
-1. **直接免安裝執行**：雙擊專案目錄下的 [啟動LibreLlama.bat](file:///c:/Users/Chars%20Hsieh/Desktop/Editor%20project/啟動LibreLlama.bat)。
+1. **直接免安裝執行**：雙擊專案目錄下的 [啟動LibreLlamaLabEditor.bat](file:///c:/Users/Chars%20Hsieh/Desktop/Editor%20project/啟動LibreLlamaLabEditor.bat)。
 2. **開發除錯執行**：
    ```powershell
-   python academic_reviewer_app.py
+   python LibreLlamaLabEditor.py
    ```
-3. **打包獨立安裝精靈**：
+3. **一鍵全自動打包發布（產出單一安裝執行檔）**：
    ```powershell
-   pyinstaller --noconfirm --onedir --windowed --name "LibreLlamaLabEditor" academic_reviewer_app.py
-   pyinstaller --noconfirm --onefile --windowed --name "uninstall" uninstall.py
-   # 複製 uninstall.exe 至 dist/LibreLlamaLabEditor 後打包為 app_bundle.zip
-   pyinstaller --noconfirm --onefile --windowed --name "LibreLlamaLabEditor_Setup_v0.9.3" --add-data "app_bundle.zip;." installer.py
+   python build_release.py
    ```
+   *將自動編譯卸載精靈、打包主程式目錄、壓縮套件並產生 `dist/LibreLlamaLabEditor_Setup_v0.9.3.exe`。*

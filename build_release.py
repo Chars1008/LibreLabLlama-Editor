@@ -83,7 +83,7 @@ def main():
         "--hidden-import", "httpx",
         "--hidden-import", "ollama",
         "--hidden-import", "academic_nlp_pipeline",
-        "academic_reviewer_app.py"
+        "LibreLlamaLabEditor.py"
     ]
     run_cmd(app_pyinstaller_args, "Step 2: Compiling LibreLlamaLabEditor onedir bundle")
 
@@ -114,6 +114,14 @@ def main():
         "installer.py"
     ]
     run_cmd(installer_args, f"Step 3: Compiling Setup Installer ({SETUP_NAME}.exe)")
+
+    # 6. Auto-cleanup temporary app_bundle.zip
+    if os.path.exists(bundle_zip):
+        print(f"[*] Cleaning up temporary archive {bundle_zip}...")
+        try:
+            os.remove(bundle_zip)
+        except Exception as e:
+            print(f"    Notice: could not delete {bundle_zip}: {e}")
 
     final_setup_exe = os.path.join(DIST_DIR, f"{SETUP_NAME}.exe")
     if not os.path.exists(final_setup_exe):

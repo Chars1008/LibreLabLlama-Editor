@@ -4,10 +4,12 @@ Test script for verifying AcademicNLPPipeline and its integration with LibreLlam
 """
 import sys
 import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import json
 
 from academic_nlp_pipeline import AcademicNLPPipeline, DiagnosticItem, AutoSanitizeChange, PipelineResult
-from academic_reviewer_app import PreflightChecker, PreflightMatch
+from LibreLlamaLabEditor import PreflightChecker, PreflightMatch
 
 def test_pipeline_core():
     print("=== Testing AcademicNLPPipeline Core ===")

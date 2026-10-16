@@ -4,10 +4,12 @@ Headless UI screenshot test for verifying NLP Pipeline in LibreLlama Lab Editor 
 """
 import sys
 import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import time
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QTimer
-from academic_reviewer_app import AcademicReviewerApp
+from LibreLlamaLabEditor import AcademicReviewerApp
 
 def main():
     app = QApplication(sys.argv)

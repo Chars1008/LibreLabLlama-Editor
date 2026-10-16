@@ -4,9 +4,11 @@ Verification script for UpdateCheckWorker and UpdateDialog in LibreLlama Lab Edi
 """
 import sys
 import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import time
 from PySide6.QtWidgets import QApplication
-from academic_reviewer_app import (
+from LibreLlamaLabEditor import (
     UpdateCheckWorker, UpdateDialog, load_config, APP_VERSION, DEFAULT_UPDATE_URL
 )
 

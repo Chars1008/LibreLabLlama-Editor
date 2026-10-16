@@ -2,9 +2,13 @@
 """
 Test script to verify degenerate repetition cleanup and JSON report salvage.
 """
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import re
 import json_repair
-from academic_reviewer_app import AcademicReviewReport, IssueItem, ResearchRecommendation
+from LibreLlamaLabEditor import AcademicReviewReport, IssueItem, ResearchRecommendation
 
 def test_salvage():
     # Simulates the exact truncated output seen in user's screenshot
