@@ -28,7 +28,6 @@ from academic_nlp_pipeline import (
 APP_VERSION = "0.9.3"
 DEFAULT_UPDATE_URL = "https://raw.githubusercontent.com/Chars1008/LibreLabLlama-Editor/main/version.json"
 FALLBACK_UPDATE_URL = "https://raw.githubusercontent.com/Chars1008/LibreLlama-Lab-Editor/main/version.json"
-FALLBACK_UPDATE_URL_2 = "https://raw.githubusercontent.com/Chars1008/LibreLlama-Reviewer/main/version.json"
 CONFIG_FILE = "app_config.json"
 
 # ==========================================
@@ -1270,18 +1269,26 @@ class UpdateCheckWorker(QThread):
         try:
             url_to_use = self.update_url
             app_dir = os.path.dirname(os.path.abspath(__file__))
+            candidate_local_dirs = [
+                app_dir,
+                os.path.dirname(app_dir),
+                os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else app_dir,
+                os.getcwd()
+            ]
 
             # 1. 處理本地檔案路徑或空字串
             data = None
             if not url_to_use or url_to_use == "version.json":
                 # 優先檢查本地是否有可用的 version.json
-                local_v = os.path.join(app_dir, "version.json")
-                if os.path.exists(local_v):
-                    try:
-                        with open(local_v, "r", encoding="utf-8") as f:
-                            data = json.load(f)
-                    except Exception:
-                        pass
+                for d in candidate_local_dirs:
+                    local_v = os.path.join(d, "version.json")
+                    if os.path.exists(local_v):
+                        try:
+                            with open(local_v, "r", encoding="utf-8") as f:
+                                data = json.load(f)
+                            break
+                        except Exception:
+                            pass
                 if data is None:
                     url_to_use = DEFAULT_UPDATE_URL
             elif url_to_use.startswith("file://"):
@@ -1301,39 +1308,59 @@ class UpdateCheckWorker(QThread):
                 else:
                     url_to_use = DEFAULT_UPDATE_URL
 
-            # 2. 透過遠端 HTTP(S) 查詢（支援 Primary 與 Fallback 多軌切換）
+            # 2. 透過遠端 HTTP(S) 查詢（支援 Token 授權與乾淨的錯誤回報）
             if data is None:
-                candidates = [url_to_use]
-                for fb in [FALLBACK_UPDATE_URL, FALLBACK_UPDATE_URL_2]:
-                    if fb not in candidates:
-                        candidates.append(fb)
-
-                last_err = ""
-                for target in candidates:
+                headers = {
+                    "User-Agent": "LibreLlamaLabEditor-Updater",
+                    "Accept": "application/json, text/plain, */*"
+                }
+                # 若環境變數有 GITHUB_TOKEN 或本機有登入 gh CLI，自動附加 Bearer Token 以存取私人倉庫
+                token = os.environ.get("GITHUB_TOKEN", "").strip()
+                if not token:
                     try:
-                        resp = httpx.get(target, timeout=8.0, follow_redirects=True)
+                        res = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, timeout=1.5)
+                        if res.returncode == 0 and res.stdout.strip():
+                            token = res.stdout.strip()
+                    except Exception:
+                        pass
+                if token:
+                    headers["Authorization"] = f"Bearer {token}"
+
+                candidates = [url_to_use]
+                if FALLBACK_UPDATE_URL not in candidates:
+                    candidates.append(FALLBACK_UPDATE_URL)
+
+                primary_err = ""
+                for idx, target in enumerate(candidates):
+                    try:
+                        resp = httpx.get(target, headers=headers, timeout=8.0, follow_redirects=True)
                         if resp.status_code == 200:
                             data = resp.json()
                             break
                         elif resp.status_code == 404:
-                            last_err = f"HTTP 404 (端點不存在: {target})"
+                            err_str = f"HTTP 404 (端點不存在: {target})"
                         else:
-                            last_err = f"HTTP {resp.status_code}"
+                            err_str = f"HTTP {resp.status_code} ({target})"
                     except Exception as ex:
-                        last_err = str(ex)
+                        err_str = f"{ex} ({target})"
 
-                # 若遠端伺服器存取失敗（例如目前 GitHub 為 Private 倉庫），自動嘗試讀取本地檔案作為後備
+                    if idx == 0:
+                        primary_err = err_str
+
+                # 若遠端伺服器存取失敗（例如 GitHub 未公開且未授權），嘗試讀取本機 version.json 作為後備
                 if data is None:
-                    local_v = os.path.join(app_dir, "version.json")
-                    if os.path.exists(local_v):
-                        try:
-                            with open(local_v, "r", encoding="utf-8") as f:
-                                data = json.load(f)
-                        except Exception:
-                            pass
+                    for d in candidate_local_dirs:
+                        cand = os.path.join(d, "version.json")
+                        if os.path.exists(cand):
+                            try:
+                                with open(cand, "r", encoding="utf-8") as f:
+                                    data = json.load(f)
+                                break
+                            except Exception:
+                                pass
 
                 if data is None:
-                    err_msg = last_err or "Cannot connect to update server."
+                    err_msg = primary_err or f"Cannot connect to update server ({url_to_use})"
                     if "404" in err_msg:
                         err_msg += "（若 GitHub 倉庫目前為私人 Private 狀態，請於發布時切換為 Public 公開）"
                     self.check_finished.emit(False, "", "", "", err_msg)

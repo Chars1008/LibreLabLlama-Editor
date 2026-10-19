@@ -95,6 +95,9 @@ def main():
     print(f"[*] Copying uninstaller and metadata into {app_dir}...")
     shutil.copy2(uninstaller_exe, os.path.join(app_dir, "uninstall.exe"))
     shutil.copy2(os.path.join(PROJECT_DIR, "version.json"), os.path.join(app_dir, "version.json"))
+    internal_dir = os.path.join(app_dir, "_internal")
+    if os.path.exists(internal_dir):
+        shutil.copy2(os.path.join(PROJECT_DIR, "version.json"), os.path.join(internal_dir, "version.json"))
 
     # 4. Create app_bundle.zip
     bundle_zip = os.path.join(PROJECT_DIR, "app_bundle.zip")
