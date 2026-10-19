@@ -3,7 +3,7 @@ import os
 import json
 import html
 import re
-from typing import List, Literal, Optional, Dict, Tuple
+from typing import List, Literal, Optional, Dict, Tuple, Set, Any
 from pydantic import BaseModel, Field
 
 from PySide6.QtCore import Qt, QThread, QTimer, Signal, Slot
@@ -2144,6 +2144,7 @@ class ResearchRecommendationCard(QFrame):
         top_row = QHBoxLayout()
         type_badge = QLabel(f" 🧪 {self.rec.action_type} ")
         type_badge.setStyleSheet("background-color: #ede9fe; color: #6d28d9; font-weight: bold; border-radius: 4px; font-size: 11px; padding: 2px 6px;")
+        type_badge.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         severity_colors = {
             "Must Address (必補/致命缺陷)": ("#fee2e2", "#991b1b"),
@@ -2153,6 +2154,7 @@ class ResearchRecommendationCard(QFrame):
         s_bg, s_fg = severity_colors.get(self.rec.severity, ("#ede9fe", "#6d28d9"))
         sev_badge = QLabel(f" {self.rec.severity} ")
         sev_badge.setStyleSheet(f"background-color: {s_bg}; color: {s_fg}; font-weight: bold; border-radius: 4px; font-size: 11px; padding: 2px 6px;")
+        sev_badge.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         top_row.addWidget(type_badge)
         top_row.addWidget(sev_badge)
@@ -2183,11 +2185,15 @@ class ResearchRecommendationCard(QFrame):
 
         title_text = "<b>⚠️ Strategic / Empirical Gap Analysis:</b>" if is_en else "<b>⚠️ 上下文與論點缺失分析 (Evidence Gap):</b>"
         g_title = QLabel(title_text)
+        g_title.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+        g_title.setCursor(Qt.IBeamCursor)
         g_title.setStyleSheet(f"font-size: 12px; color: {text_title}; font-weight: bold;")
         g_layout.addWidget(g_title)
 
         if not is_en and self.rec.gap_identified_zh:
             gap_zh = QLabel(f"<b>🇹🇼 中文：</b><span style='color: {zh_color};'>{html.escape(self.rec.gap_identified_zh)}</span>")
+            gap_zh.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+            gap_zh.setCursor(Qt.IBeamCursor)
             gap_zh.setWordWrap(True)
             gap_zh.setStyleSheet(f"font-size: 12px; color: {zh_color};")
             g_layout.addWidget(gap_zh)
@@ -2195,6 +2201,8 @@ class ResearchRecommendationCard(QFrame):
         en_val = self.rec.gap_identified_en.strip() if self.rec.gap_identified_en else ""
         if en_val:
             gap_en = QLabel(f"{'<b>Critique:</b> ' if is_en else '<b>🇺🇸 EN：</b>'}<span style='color: {en_color}; font-style: italic;'>{html.escape(en_val)}</span>")
+            gap_en.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+            gap_en.setCursor(Qt.IBeamCursor)
             gap_en.setWordWrap(True)
             gap_en.setStyleSheet(f"font-size: 11px; color: {en_color};")
             g_layout.addWidget(gap_en)
@@ -2209,11 +2217,15 @@ class ResearchRecommendationCard(QFrame):
 
         prop_title_text = "<b>💡 Actionable Strategic Proposal:</b>" if is_en else "<b>💡 建議補做方案 (Proposed Protocol / Experiments):</b>"
         p_title = QLabel(prop_title_text)
+        p_title.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+        p_title.setCursor(Qt.IBeamCursor)
         p_title.setStyleSheet(f"font-size: 12px; color: {text_title}; font-weight: bold;")
         p_layout.addWidget(p_title)
 
         if not is_en and self.rec.concrete_proposal_zh:
             prop_zh = QLabel(f"<b>🇹🇼 中文：</b><span style='color: {zh_color};'>{html.escape(self.rec.concrete_proposal_zh)}</span>")
+            prop_zh.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+            prop_zh.setCursor(Qt.IBeamCursor)
             prop_zh.setWordWrap(True)
             prop_zh.setStyleSheet(f"font-size: 12px; color: {zh_color};")
             p_layout.addWidget(prop_zh)
@@ -2221,6 +2233,8 @@ class ResearchRecommendationCard(QFrame):
         prop_en_val = self.rec.concrete_proposal_en.strip() if self.rec.concrete_proposal_en else ""
         if prop_en_val:
             prop_en = QLabel(f"{'<b>Proposal:</b> ' if is_en else '<b>🇺🇸 EN：</b>'}<span style='color: {en_color}; font-style: italic;'>{html.escape(prop_en_val)}</span>")
+            prop_en.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+            prop_en.setCursor(Qt.IBeamCursor)
             prop_en.setWordWrap(True)
             prop_en.setStyleSheet(f"font-size: 11px; color: {en_color};")
             p_layout.addWidget(prop_en)
@@ -2235,11 +2249,15 @@ class ResearchRecommendationCard(QFrame):
 
         impact_title_text = "<b>🛡️ Strategic Uplift & Acceptance Impact:</b>" if is_en else "<b>🛡️ 投稿防禦效益 (Defense Impact):</b>"
         i_title = QLabel(impact_title_text)
+        i_title.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+        i_title.setCursor(Qt.IBeamCursor)
         i_title.setStyleSheet(f"font-size: 12px; color: {text_title}; font-weight: bold;")
         i_layout.addWidget(i_title)
 
         if not is_en and self.rec.impact_on_acceptance_zh:
             impact_zh = QLabel(f"<b>🇹🇼 中文：</b><span style='color: {zh_color};'>{html.escape(self.rec.impact_on_acceptance_zh)}</span>")
+            impact_zh.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+            impact_zh.setCursor(Qt.IBeamCursor)
             impact_zh.setWordWrap(True)
             impact_zh.setStyleSheet(f"font-size: 12px; color: {zh_color};")
             i_layout.addWidget(impact_zh)
@@ -2247,6 +2265,8 @@ class ResearchRecommendationCard(QFrame):
         impact_en_val = self.rec.impact_on_acceptance_en.strip() if self.rec.impact_on_acceptance_en else ""
         if impact_en_val:
             impact_en = QLabel(f"{'<b>Impact:</b> ' if is_en else '<b>🇺🇸 EN：</b>'}<span style='color: {en_color}; font-style: italic;'>{html.escape(impact_en_val)}</span>")
+            impact_en.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+            impact_en.setCursor(Qt.IBeamCursor)
             impact_en.setWordWrap(True)
             impact_en.setStyleSheet(f"font-size: 11px; color: {en_color};")
             i_layout.addWidget(impact_en)
@@ -2320,6 +2340,7 @@ class IssueCard(QFrame):
         top_row = QHBoxLayout()
         category_badge = QLabel(f" {badge_text} ")
         category_badge.setStyleSheet(f"background-color: {bg_col}; color: {txt_col}; font-weight: bold; border-radius: 4px; font-size: 11px; padding: 2px 6px;")
+        category_badge.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         severity_map = {
             "Critical": ("Critical Severity" if is_en else "嚴重缺陷 (Critical)"),
@@ -2328,6 +2349,7 @@ class IssueCard(QFrame):
         }
         severity_label = QLabel(f"{severity_map.get(self.issue.severity, self.issue.severity)}")
         severity_label.setStyleSheet("color: #64748b; font-size: 11px;")
+        severity_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         top_row.addWidget(category_badge)
         top_row.addStretch()
@@ -2354,6 +2376,8 @@ class IssueCard(QFrame):
         meaning_layout.setSpacing(4)
 
         orig_label = QLabel(f"{'<b>📌 Original Snippet:</b> ' if is_en else '<b>📌 原文片段：</b>'}<span style='color: {text_primary};'>\"{html.escape(self.issue.original_text)}\"</span>")
+        orig_label.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+        orig_label.setCursor(Qt.IBeamCursor)
         orig_label.setWordWrap(True)
         orig_label.setStyleSheet(f"color: {text_primary}; font-size: 12px;")
         meaning_layout.addWidget(orig_label)
@@ -2361,6 +2385,8 @@ class IssueCard(QFrame):
         analysis_txt = self.issue.meaning_analysis_en if is_en else (self.issue.meaning_analysis_zh or self.issue.meaning_analysis_en)
         if analysis_txt:
             trans_label = QLabel(f"{'<b>Semantic Analysis:</b> ' if is_en else '<b>文意解析與翻譯：</b>'}<span style='color: {text_secondary};'>{html.escape(analysis_txt)}</span>")
+            trans_label.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+            trans_label.setCursor(Qt.IBeamCursor)
             trans_label.setWordWrap(True)
             trans_label.setStyleSheet(f"color: {text_secondary}; font-size: 12px;")
             meaning_layout.addWidget(trans_label)
@@ -2378,6 +2404,8 @@ class IssueCard(QFrame):
             zh_comm = self.issue.reviewer_comment_zh.strip()
             if zh_comm:
                 comment_zh = QLabel(f"<b>🇹🇼 審稿意見 (中文)：</b><span style='color: {zh_color};'>{html.escape(zh_comm)}</span>")
+                comment_zh.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+                comment_zh.setCursor(Qt.IBeamCursor)
                 comment_zh.setWordWrap(True)
                 comment_zh.setStyleSheet("font-size: 12px;")
                 comment_layout.addWidget(comment_zh)
@@ -2386,6 +2414,8 @@ class IssueCard(QFrame):
         en_comm = self.issue.reviewer_comment_en.strip() if self.issue.reviewer_comment_en else ""
         if en_comm:
             comment_en = QLabel(f"{'<b>Reviewer Critique:</b> ' if is_en else '<b>🇺🇸 Reviewer Comment (EN)：</b>'}<span style='color: {en_color}; font-style: italic;'>{html.escape(en_comm)}</span>")
+            comment_en.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+            comment_en.setCursor(Qt.IBeamCursor)
             comment_en.setWordWrap(True)
             comment_en.setStyleSheet("font-size: 11px;")
             comment_layout.addWidget(comment_en)
@@ -2397,6 +2427,7 @@ class IssueCard(QFrame):
         # 3~4 多選項展示
         opt_title_text = "💡 Revision Options (Click to select, full text syncs dynamically):" if is_en else "💡 建議修改選項 (點擊切換，右側修改全文將即時連動):"
         opt_title = QLabel(opt_title_text)
+        opt_title.setTextInteractionFlags(Qt.TextSelectableByMouse)
         opt_title.setStyleSheet("font-weight: bold; color: #10b981; font-size: 12px; margin-top: 4px;")
         layout.addWidget(opt_title)
 
@@ -2410,6 +2441,7 @@ class IssueCard(QFrame):
             opt_header = QHBoxLayout()
             label_text = f"Option {chr(65 + idx)}: {html.escape(opt.style_label)}" if is_en else f"選項 {chr(65 + idx)}：{html.escape(opt.style_label)}"
             label_badge = QLabel(label_text)
+            label_badge.setTextInteractionFlags(Qt.TextSelectableByMouse)
             label_badge.setStyleSheet("font-weight: bold; color: #10b981; font-size: 11px;")
             opt_header.addWidget(label_badge)
             opt_header.addStretch()
@@ -2425,6 +2457,8 @@ class IssueCard(QFrame):
 
             rev_title = "Revised: " if is_en else "修訂句："
             rev_text_lbl = QLabel(f"<b>{rev_title}</b><span style='color: #10b981;'>\"{html.escape(opt.revised_text)}\"</span>")
+            rev_text_lbl.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+            rev_text_lbl.setCursor(Qt.IBeamCursor)
             rev_text_lbl.setWordWrap(True)
             rev_text_lbl.setStyleSheet(f"font-size: 12px; color: {text_primary};")
             opt_layout.addWidget(rev_text_lbl)
@@ -2433,6 +2467,8 @@ class IssueCard(QFrame):
             if rat_val:
                 rat_title = "Rationale: " if is_en else "理由："
                 rat_lbl = QLabel(f"<b>{rat_title}</b><span style='color: {text_secondary};'>{html.escape(rat_val)}</span>")
+                rat_lbl.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+                rat_lbl.setCursor(Qt.IBeamCursor)
                 rat_lbl.setWordWrap(True)
                 rat_lbl.setStyleSheet("font-size: 11px;")
                 opt_layout.addWidget(rat_lbl)
@@ -2497,6 +2533,8 @@ class AcademicReviewerApp(QMainWindow):
 
         self.current_report: Optional[AcademicReviewReport] = None
         self.selected_options: Dict[int, int] = {}
+        self.user_interaction_order: List[int] = []
+        self.last_clicked_issue_idx: Optional[int] = None
         self.latest_revised_plain_text: str = ""
 
         self.elapsed_seconds: int = 0
@@ -3798,6 +3836,8 @@ class AcademicReviewerApp(QMainWindow):
         self.status_banner.setStyleSheet("color: #10b981; font-weight: bold; font-size: 11px;")
 
         self.selected_options = {idx: 0 for idx in range(issue_count)}
+        self.user_interaction_order = []
+        self.last_clicked_issue_idx = None
 
         gist_val = report.article_gist_en if is_en else (report.article_gist_zh or report.article_gist_en)
         assessment_html = f"""
@@ -3902,31 +3942,96 @@ class AcademicReviewerApp(QMainWindow):
 
     def handle_option_selection(self, issue_idx: int, option_idx: int):
         self.selected_options[issue_idx] = option_idx
+        if issue_idx in self.user_interaction_order:
+            self.user_interaction_order.remove(issue_idx)
+        self.user_interaction_order.append(issue_idx)
+        self.last_clicked_issue_idx = issue_idx
         self.update_revised_article_view()
 
-    def find_span_in_text(self, full_text: str, snippet: str) -> Tuple[int, int]:
-        clean_snippet = snippet.strip().strip('"\'')
-        if not clean_snippet:
+    def find_span_in_text(self, full_text: str, snippet: str, search_start: int = 0) -> Tuple[int, int]:
+        clean = snippet.strip()
+        # 1. Unicode & Markdown Normalization
+        clean = clean.replace('“', '"').replace('”', '"').replace('‘', "'").replace('’', "'")
+        clean = clean.replace('«', '"').replace('»', '"').replace('—', '-').replace('–', '-')
+        clean = clean.replace('…', '...').replace('\u00a0', ' ')
+        clean = clean.strip('"\'`*').strip()
+        if not clean:
             return -1, -1
 
-        idx = full_text.find(clean_snippet)
+        norm_full = full_text.replace('“', '"').replace('”', '"').replace('‘', "'").replace('’', "'")
+        norm_full = norm_full.replace('«', '"').replace('»', '"').replace('—', '-').replace('–', '-')
+        norm_full = norm_full.replace('…', '...').replace('\u00a0', ' ')
+
+        # 2. Exact match
+        idx = norm_full.find(clean, search_start)
+        if idx == -1 and search_start > 0:
+            idx = norm_full.find(clean)
         if idx != -1:
-            return idx, idx + len(clean_snippet)
+            return idx, idx + len(clean)
 
-        idx_lower = full_text.lower().find(clean_snippet.lower())
-        if idx_lower != -1:
-            return idx_lower, idx_lower + len(clean_snippet)
+        # 3. Case-insensitive exact match
+        idx = norm_full.lower().find(clean.lower(), search_start)
+        if idx == -1 and search_start > 0:
+            idx = norm_full.lower().find(clean.lower())
+        if idx != -1:
+            return idx, idx + len(clean)
 
-        pattern = re.sub(r'\\ ', r'\\s+', re.escape(clean_snippet))
-        m = re.search(pattern, full_text, re.IGNORECASE)
-        if m:
-            return m.start(), m.end()
+        # 4. Whitespace & Newline tolerant regex match
+        words = [re.escape(w) for w in re.split(r'\s+', clean) if w]
+        if words:
+            pat = r'\s+'.join(words)
+            m = re.search(pat, norm_full[search_start:], re.IGNORECASE)
+            offset = search_start
+            if not m and search_start > 0:
+                m = re.search(pat, norm_full, re.IGNORECASE)
+                offset = 0
+            if m:
+                return offset + m.start(), offset + m.end()
 
-        prefix = clean_snippet[:min(25, len(clean_snippet))].strip()
-        if len(prefix) >= 12:
-            idx_pref = full_text.lower().find(prefix.lower())
-            if idx_pref != -1:
-                return idx_pref, min(len(full_text), idx_pref + len(clean_snippet))
+        # 5. Ellipsis / Truncation match (e.g. "We investigated... the trend")
+        if '...' in clean:
+            parts = clean.split('...')
+            head, tail = parts[0].strip(), parts[-1].strip()
+            h_words = [re.escape(w) for w in re.split(r'\s+', head) if w]
+            t_words = [re.escape(w) for w in re.split(r'\s+', tail) if w]
+            if h_words and t_words:
+                pat = r'\s+'.join(h_words) + r'[\s\S]*?' + r'\s+'.join(t_words)
+                m = re.search(pat, norm_full[search_start:], re.IGNORECASE)
+                offset = search_start
+                if not m and search_start > 0:
+                    m = re.search(pat, norm_full, re.IGNORECASE)
+                    offset = 0
+                if m:
+                    return offset + m.start(), offset + m.end()
+
+        # 6. Trailing punctuation stripped match
+        stripped_punct = clean.rstrip('.,;:?!')
+        if stripped_punct != clean:
+            words = [re.escape(w) for w in re.split(r'\s+', stripped_punct) if w]
+            if words:
+                pat = r'\s+'.join(words) + r'[\.,;:?!]?'
+                m = re.search(pat, norm_full[search_start:], re.IGNORECASE)
+                offset = search_start
+                if not m and search_start > 0:
+                    m = re.search(pat, norm_full, re.IGNORECASE)
+                    offset = 0
+                if m:
+                    return offset + m.start(), offset + m.end()
+
+        # 7. Prefix and suffix window anchor (for long snippets with LLM paraphrase)
+        if len(clean) >= 20:
+            words = re.split(r'\s+', clean)
+            if len(words) >= 4:
+                head_words = [re.escape(w) for w in words[:3]]
+                tail_words = [re.escape(w) for w in words[-2:]]
+                pat = r'\s+'.join(head_words) + r'[\s\S]{1,160}?' + r'\s+'.join(tail_words)
+                m = re.search(pat, norm_full[search_start:], re.IGNORECASE)
+                offset = search_start
+                if not m and search_start > 0:
+                    m = re.search(pat, norm_full, re.IGNORECASE)
+                    offset = 0
+                if m:
+                    return offset + m.start(), offset + m.end()
 
         return -1, -1
 
@@ -3959,47 +4064,174 @@ class AcademicReviewerApp(QMainWindow):
                 "Collocation Defect": ("#d1fae5", "#065f46", "#6ee7b7")
             }
 
-        spans = []
+        # 1. 依序匹配原文片段，並處理同一個片語出現多次的情況
+        issue_spans = []
+        used_spans = []
         for idx, issue in enumerate(issues):
-            s, e = self.find_span_in_text(original_draft, issue.original_text)
+            search_start = 0
+            for (us_s, us_e, us_idx) in used_spans:
+                if issues[us_idx].original_text.strip() == issue.original_text.strip():
+                    search_start = max(search_start, us_e)
+
+            s, e = self.find_span_in_text(original_draft, issue.original_text, search_start=search_start)
+            if s == -1 and search_start > 0:
+                s, e = self.find_span_in_text(original_draft, issue.original_text, search_start=0)
+
             if s != -1:
-                spans.append((s, e, idx))
+                issue_spans.append((s, e, idx))
+                used_spans.append((s, e, idx))
 
-        spans.sort(key=lambda x: x[0])
-        non_overlapping_spans = []
-        last_end = 0
-        for s, e, idx in spans:
-            if s >= last_end:
-                non_overlapping_spans.append((s, e, idx))
-                last_end = e
+        # 取得每個 issue 當前選擇的修訂選項
+        chosen_revisions = {}
+        for idx, issue in enumerate(issues):
+            opt_idx = self.selected_options.get(idx, 0)
+            if opt_idx < len(issue.revision_options):
+                chosen_revisions[idx] = issue.revision_options[opt_idx]
+            elif issue.revision_options:
+                chosen_revisions[idx] = issue.revision_options[0]
+            else:
+                chosen_revisions[idx] = None
 
+        def get_priority(i_idx: int) -> int:
+            if i_idx in self.user_interaction_order:
+                return 1000 + self.user_interaction_order.index(i_idx)
+            return 0
+
+        # 2. 檢測巢狀包含 (Nesting) 與衝突重疊 (Conflicting Overlaps)
+        nested_children: Dict[int, List[int]] = {idx: [] for _, _, idx in issue_spans}
+        conflicts: List[Tuple[int, int]] = []
+
+        for i_pos, (s1, e1, idx1) in enumerate(issue_spans):
+            for s2, e2, idx2 in issue_spans[i_pos + 1:]:
+                if max(s1, s2) < min(e1, e2):
+                    # 兩區間有重疊
+                    if s1 <= s2 and e2 <= e1:
+                        # idx2 巢狀包含於 idx1 內部
+                        child_orig = issues[idx2].original_text
+                        parent_rev = chosen_revisions[idx1].revised_text if chosen_revisions[idx1] else ""
+                        cs, ce = self.find_span_in_text(parent_rev, child_orig)
+                        if cs != -1:
+                            nested_children[idx1].append(idx2)
+                        else:
+                            conflicts.append((idx1, idx2))
+                    elif s2 <= s1 and e1 <= e2:
+                        # idx1 巢狀包含於 idx2 內部
+                        child_orig = issues[idx1].original_text
+                        parent_rev = chosen_revisions[idx2].revised_text if chosen_revisions[idx2] else ""
+                        cs, ce = self.find_span_in_text(parent_rev, child_orig)
+                        if cs != -1:
+                            nested_children[idx2].append(idx1)
+                        else:
+                            conflicts.append((idx1, idx2))
+                    else:
+                        conflicts.append((idx1, idx2))
+
+        # 針對無法巢狀相容的衝突，由使用者最近點擊的優先權決定保留者
+        suppressed_indices: Set[int] = set()
+        for idx1, idx2 in conflicts:
+            p1 = get_priority(idx1)
+            p2 = get_priority(idx2)
+            if p1 >= p2:
+                suppressed_indices.add(idx2)
+            else:
+                suppressed_indices.add(idx1)
+
+        # 巢狀子項目不重複於最外層渲染
+        nested_child_set: Set[int] = set()
+        for p_idx, c_list in nested_children.items():
+            if p_idx not in suppressed_indices:
+                for c in c_list:
+                    if c not in suppressed_indices:
+                        nested_child_set.add(c)
+
+        top_spans = []
+        for s, e, idx in issue_spans:
+            if idx not in suppressed_indices and idx not in nested_child_set:
+                top_spans.append((s, e, idx))
+
+        top_spans.sort(key=lambda x: x[0])
+
+        # 3. 組裝純文字與高亮 HTML
         html_parts = []
         plain_parts = []
         curr_pos = 0
 
-        for s, e, idx in non_overlapping_spans:
+        for s, e, idx in top_spans:
             if s > curr_pos:
                 unmodified = original_draft[curr_pos:s]
                 plain_parts.append(unmodified)
                 html_parts.append(html.escape(unmodified))
 
             issue = issues[idx]
-            opt_idx = self.selected_options.get(idx, 0)
-            if opt_idx < len(issue.revision_options):
-                chosen_opt = issue.revision_options[opt_idx]
-            else:
-                chosen_opt = issue.revision_options[0]
+            chosen_opt = chosen_revisions.get(idx)
+            if not chosen_opt:
+                curr_pos = e
+                continue
 
             revised_snippet = chosen_opt.revised_text.strip()
-            plain_parts.append(revised_snippet)
+            is_recent = (idx == self.last_clicked_issue_idx)
 
-            bg_c, fg_c, border_c = style_map.get(issue.category, ("#d1fae5", "#065f46", "#6ee7b7"))
-            tip = f"{issue.category}: {chosen_opt.style_label}"
-            styled_chunk = (
-                f"<span style='background-color: {bg_c}; color: {fg_c}; border-bottom: 2px solid {border_c}; "
-                f"border-radius: 3px; padding: 1px 3px;' title='{html.escape(tip)}'>{html.escape(revised_snippet)}</span>"
-            )
-            html_parts.append(styled_chunk)
+            children = [c for c in nested_children.get(idx, []) if c not in suppressed_indices]
+            if children:
+                c_spans = []
+                for c_idx in children:
+                    c_orig = issues[c_idx].original_text
+                    cs, ce = self.find_span_in_text(revised_snippet, c_orig)
+                    if cs != -1:
+                        c_spans.append((cs, ce, c_idx))
+                c_spans.sort(key=lambda x: x[0])
+
+                p_plain = []
+                p_html = []
+                p_pos = 0
+                for cs, ce, c_idx in c_spans:
+                    if cs > p_pos:
+                        p_plain.append(revised_snippet[p_pos:cs])
+                        p_html.append(html.escape(revised_snippet[p_pos:cs]))
+
+                    c_opt = chosen_revisions.get(c_idx)
+                    c_rev = c_opt.revised_text.strip() if c_opt else ""
+                    p_plain.append(c_rev)
+
+                    c_issue = issues[c_idx]
+                    c_bg, c_fg, c_bd = style_map.get(c_issue.category, ("#d1fae5", "#065f46", "#6ee7b7"))
+                    c_tip = f"{c_issue.category}: {c_opt.style_label if c_opt else ''}"
+                    c_recent = (c_idx == self.last_clicked_issue_idx)
+                    c_border = "3px solid #10b981" if c_recent else f"2px solid {c_bd}"
+                    p_html.append(
+                        f"<span style='background-color: {c_bg}; color: {c_fg}; border-bottom: {c_border}; "
+                        f"font-weight: bold; border-radius: 3px; padding: 1px 3px;' title='{html.escape(c_tip)}'>"
+                        f"{html.escape(c_rev)}</span>"
+                    )
+                    p_pos = ce
+
+                if p_pos < len(revised_snippet):
+                    p_plain.append(revised_snippet[p_pos:])
+                    p_html.append(html.escape(revised_snippet[p_pos:]))
+
+                combined_plain = "".join(p_plain)
+                combined_html_inner = "".join(p_html)
+
+                bg_c, fg_c, border_c = style_map.get(issue.category, ("#ede9fe", "#6d28d9", "#8b5cf6"))
+                tip = f"{issue.category}: {chosen_opt.style_label}"
+                p_border = "3px solid #3b82f6" if is_recent else f"2px solid {border_c}"
+                styled_chunk = (
+                    f"<span style='background-color: {bg_c}; color: {fg_c}; border-bottom: {p_border}; "
+                    f"border-radius: 3px; padding: 1px 3px;' title='{html.escape(tip)}'>{combined_html_inner}</span>"
+                )
+                plain_parts.append(combined_plain)
+                html_parts.append(styled_chunk)
+            else:
+                plain_parts.append(revised_snippet)
+                bg_c, fg_c, border_c = style_map.get(issue.category, ("#d1fae5", "#065f46", "#6ee7b7"))
+                tip = f"{issue.category}: {chosen_opt.style_label}"
+                p_border = "3px solid #10b981" if is_recent else f"2px solid {border_c}"
+                styled_chunk = (
+                    f"<span style='background-color: {bg_c}; color: {fg_c}; border-bottom: {p_border}; "
+                    f"border-radius: 3px; padding: 1px 3px;' title='{html.escape(tip)}'>{html.escape(revised_snippet)}</span>"
+                )
+                html_parts.append(styled_chunk)
+
             curr_pos = e
 
         if curr_pos < len(original_draft):
