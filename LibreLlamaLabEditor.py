@@ -1403,7 +1403,10 @@ class UpdateDownloadWorker(QThread):
             dest_path = os.path.join(tempfile.gettempdir(), "LibreLlamaLabEditor_Setup_Update.exe")
             with httpx.stream("GET", self.download_url, follow_redirects=True, timeout=180.0) as resp:
                 if resp.status_code != 200:
-                    self.finished.emit(False, f"HTTP {resp.status_code}")
+                    err_msg = f"HTTP {resp.status_code}"
+                    if resp.status_code == 404:
+                        err_msg += " (找不到下載檔案：GitHub Releases 尚未發布安裝包資產或下載路徑變更)"
+                    self.finished.emit(False, err_msg)
                     return
                 total_bytes = int(resp.headers.get("content-length", 0))
                 downloaded = 0
