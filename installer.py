@@ -17,7 +17,7 @@ import httpx
 import ollama
 import winreg
 
-def register_windows_uninstall(install_dir: str, version: str = "0.9.3"):
+def register_windows_uninstall(install_dir: str, version: str = "1.0.0"):
     key_path = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\LibreLlamaLabEditor"
     exe_path = os.path.join(install_dir, "LibreLlamaLabEditor.exe")
     uninst_path = os.path.join(install_dir, "uninstall.exe")
@@ -157,7 +157,7 @@ class ExtractWorker(QThread):
                             create_windows_shortcut(uninst_exe, uninst_lnk, self.target_dir)
 
             # 註冊至 Windows 設定之「應用程式與功能」
-            register_windows_uninstall(self.target_dir, "0.9.3")
+            register_windows_uninstall(self.target_dir, "1.0.0")
 
             self.progress.emit(100, "應用程式檔案部署完成！")
             self.finished.emit(True, "檔案解壓縮與安裝完成！")
@@ -224,7 +224,7 @@ class ModelPullWorker(QThread):
 class InstallerWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("LibreLlama Lab Editor ─ 安裝精靈 v0.9.3 (封閉開發版)")
+        self.setWindowTitle("LibreLlama Lab Editor ─ 安裝精靈 v1.0.0 (公開測試版)")
         self.resize(680, 520)
         self.target_dir = os.path.join(os.environ.get("LOCALAPPDATA", "C:\\"), "LibreLlamaLabEditor")
         self.extract_worker: Optional[ExtractWorker] = None
@@ -263,7 +263,7 @@ class InstallerWindow(QMainWindow):
         header_title.setFont(QFont("Segoe UI", 14, QFont.Bold))
         header_layout.addWidget(header_title)
         header_layout.addStretch()
-        v_tag = QLabel("版本 v0.9.3 (封閉開發版)")
+        v_tag = QLabel("版本 v1.0.0 (公開測試版)")
         v_tag.setStyleSheet("color: #94a3b8; font-size: 11px;")
         header_layout.addWidget(v_tag)
         main_layout.addLayout(header_layout)

@@ -6,13 +6,13 @@ import re
 from typing import List, Literal, Optional, Dict, Tuple, Set, Any
 from pydantic import BaseModel, Field
 
-from PySide6.QtCore import Qt, QThread, QTimer, Signal, Slot
+from PySide6.QtCore import Qt, QThread, QTimer, Signal, Slot, QPoint
 from PySide6.QtGui import QFont, QTextCursor, QPalette, QColor
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QSplitter, QTextEdit, QTextBrowser, QPushButton, QLabel, QComboBox,
     QScrollArea, QFrame, QMessageBox, QProgressBar, QMenu, QDialog,
-    QLineEdit, QFormLayout, QTabWidget, QStackedWidget
+    QLineEdit, QFormLayout, QTabWidget, QStackedWidget, QGraphicsDropShadowEffect
 )
 import subprocess
 import shutil
@@ -25,7 +25,7 @@ from academic_nlp_pipeline import (
     AcademicNLPPipeline, DiagnosticItem, AutoSanitizeChange, PipelineResult
 )
 
-APP_VERSION = "0.9.3"
+APP_VERSION = "1.0.0"
 DEFAULT_UPDATE_URL = "https://raw.githubusercontent.com/Chars1008/LibreLabLlama-Editor/main/version.json"
 FALLBACK_UPDATE_URL = "https://raw.githubusercontent.com/Chars1008/LibreLlama-Lab-Editor/main/version.json"
 CONFIG_FILE = "app_config.json"
@@ -35,9 +35,9 @@ CONFIG_FILE = "app_config.json"
 # ==========================================
 I18N = {
     "zh_TW": {
-        "app_title": "LibreLlama Lab Editor ─ 多情境寫作審查與改寫工作台",
+        "app_title": "LibreLlama Lab Editor ─ 多情境寫作審查與改寫工作台 (v1.0.0 公開測試版)",
         "toolbar_title": "🦙 LibreLlama Lab Editor",
-        "pre_release_badge": "v0.9.3 封閉開發版",
+        "pre_release_badge": "v1.0.0 公開測試版",
         "engine_ollama": "🖥️ 在地 Ollama (100% 離線隱私)",
         "engine_api": "☁️ 線上 API (DeepSeek/OpenAI/Gemini)",
         "api_settings": "⚙️ API 設定",
@@ -96,9 +96,15 @@ I18N = {
         "discourse_placeholder_text": "✍️ 審查完成後，將在此列出逐句文法句構、推論缺陷、修辭風格與邏輯矛盾診斷卡片。",
 
         # 中欄分頁與右欄互動工作台
+        "tab_working_draft": "📝 修改中全文",
         "tab_recs": "💡 實證補強",
         "tab_colloc": "🔤 搭配詞選項",
         "tab_discourse": "⚖️ 句構與邏輯",
+        "working_title": "📝 修改中全文 (互動修訂)",
+        "copy_working": "📋 複製修改中全文",
+        "btn_stop_review": "🛑 終止審查 (Stop Review)",
+        "carousel_prev": "◀ 上一張",
+        "carousel_next": "下一張 ▶",
         "monitor_title": "📡 智能審查執行監控",
         "monitor_badge_ready": "就緒",
         "monitor_badge_running": "🔄 審查進行中...",
@@ -132,9 +138,9 @@ I18N = {
         "auto_fix_menu": "⚡ 一鍵自動修復縮寫與口語詞",
     },
     "en_US": {
-        "app_title": "LibreLlama Lab Editor ─ Multi-Context Writing & Review Workbench",
+        "app_title": "LibreLlama Lab Editor ─ Multi-Context Writing & Review Workbench (v1.0.0 Open Beta)",
         "toolbar_title": "🦙 LibreLlama Lab Editor",
-        "pre_release_badge": "v0.9.3 Pre-release",
+        "pre_release_badge": "v1.0.0 Open Beta",
         "engine_ollama": "🖥️ Local Ollama (100% Offline Privacy)",
         "engine_api": "☁️ Cloud API (DeepSeek/OpenAI/Gemini)",
         "api_settings": "⚙️ API Settings",
@@ -193,9 +199,15 @@ I18N = {
         "discourse_placeholder_text": "✍️ Sentence-by-sentence grammar diagnostics, deductive flaws, tone, and logic critique cards will appear here.",
 
         # Middle Tabs & Right Discussion Workbench
+        "tab_working_draft": "📝 Working Draft",
         "tab_recs": "💡 Evidence Defenses",
         "tab_colloc": "🔤 Collocations",
         "tab_discourse": "⚖️ Syntax & Logic",
+        "working_title": "📝 Working Draft (Interactive Revisions)",
+        "copy_working": "📋 Copy Working Draft",
+        "btn_stop_review": "🛑 Stop Review",
+        "carousel_prev": "◀ Prev",
+        "carousel_next": "Next ▶",
         "monitor_title": "📡 Review Stream Monitor",
         "monitor_badge_ready": "Ready",
         "monitor_badge_running": "🔄 Reviewing...",
@@ -1602,6 +1614,10 @@ class ReviewWorker(QThread):
         self.writing_mode = writing_mode
         self.context_scope = context_scope
         self.section_target = section_target
+        self.is_stopped: bool = False
+
+    def stop(self):
+        self.is_stopped = True
 
     def build_system_prompt(self) -> str:
         mode_info = WRITING_MODES.get(self.writing_mode, WRITING_MODES["academic"])
@@ -1670,14 +1686,19 @@ DIMENSION 1: STRATEGIC & EMPIRICAL RECOMMENDATIONS (`research_recommendations`)
 DIMENSION 2: COLLOCATION & LEXICAL REVISION (`collocation_issues`)
 ==================================================
 - Focus strictly on word- and phrase-level pairings: unnatural verb-noun combinations (e.g. 'make an experiment' -> conduct), loose prepositions, unidiomatic academic collocations.
-- Provide 3 to 6 distinct items.
+- Exhaustive coverage: Examine every sentence thoroughly. Identify all flawed or sub-optimal pairings (recommended 4 to 8+ items).
 - For EVERY issue, provide 3 to 4 authentic stylistic options in `revision_options` (Option A: Standard, Option B: High-Impact, Option C: Cautious/Hedged, Option D: Authoritative).
 
 ==================================================
 DIMENSION 3: DISCOURSE, GRAMMAR & LOGIC CRITIQUES (`discourse_issues`)
 ==================================================
 - Focus on sentence-level and discourse-level flaws: Grammar & Mechanics, Logic Error (contradictions, internal inconsistencies), Flawed Deduction (leaps in logic, overclaiming), and Rhetorical Defect.
-- Provide 3 to 6 distinct items.
+- Exhaustive coverage: Examine every sentence thoroughly. Identify all flawed syntax or logical inconsistencies (recommended 4 to 8+ items).
+
+【CRITICAL RULE: STRICTLY FORBID ELLIPSES】:
+- `original_text` MUST match an exact, contiguous verbatim phrase or complete sentence from the text.
+- `revised_text` MUST be a fully articulated, drop-in replacement.
+- DO NOT use ellipsis ('...' or '…') in `original_text` or `revised_text`. Output complete phrases or sentences!
 
 【CRITICAL RULE: DUAL NON-MUTUALLY-EXCLUSIVE TRACK】:
 A single sentence often contains BOTH a lexical/collocation flaw AND a grammatical or logical error.
@@ -1711,7 +1732,7 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
 維度二：【搭配詞與精準用詞替換選項 (`collocation_issues`)】
 ==================================================
 - 專注詞彙與片語層級：精準抓出中式英文、生硬搭配、動名不合、非自然介系詞（如 make research ➔ conduct research; play an effect ➔ exert an effect; statistically big ➔ statistically significant）。
-- 產出 3 至 6 處改進點。
+- 【地毯式深入檢核】：請逐句詳盡檢驗草稿，凡有生硬或非道地搭配詞皆應提出（建議產出 4 至 8 處以上，不受限於 3 處，務求精益求精）。
 - 每一處問題均【必須】填寫：
   * reviewer_comment_en: 1~2 句專業且道地的英文審稿評語 (Rigorous peer-reviewer critique in pure English，絕不可為空)！
   * reviewer_comment_zh: 正體中文審稿意見。
@@ -1721,8 +1742,15 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
 維度三：【文法句構、推論缺陷、修辭風格與邏輯矛盾 (`discourse_issues`)】
 ==================================================
 - 專注句子結構與篇章邏輯：懸垂修飾、主謂不合、平行結構、過度宣稱（Overclaiming）、推論跳躍、邏輯矛盾與非正式語氣。
-- 產出 3 至 6 處改進點。
+- 【地毯式深入檢核】：請檢視全文論證結構與各句文法，揪出所有瑕疵（建議產出 4 至 8 處以上，不受限於 3 處）。
 - 每一處問題同樣【必須】填寫 reviewer_comment_en (專業英文評語，絕不可為空) 與 reviewer_comment_zh (正體中文評語) 及 revision_options！
+
+==================================================
+【嚴格禁止使用省略號】
+==================================================
+- `original_text` 必須精準對應原文之連續完整詞彙或句子。
+- `revised_text` 必須提供完整且文法正確的替換語句。
+- 【絕不可使用省略號（`...` 或 `…`）截斷句子】！請輸出完整句子，以便系統能精準套用至修改後全文。
 
 ==================================================
 【關鍵核心規則：雙軌並行、絕不互斥 (Non-Mutually Exclusive)】
@@ -1755,8 +1783,8 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
                         "temperature": 0.45,
                         "top_p": 0.90,
                         "top_k": 40,
-                        "repeat_penalty": 1.18,
-                        "repeat_last_n": 128,
+                        "repeat_penalty": 1.22,
+                        "repeat_last_n": 512,
                         "num_ctx": 16384,
                         "num_predict": -1
                     },
@@ -1764,6 +1792,10 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
                 )
                 try:
                     for chunk in response_stream:
+                        if self.is_stopped:
+                            print("[ReviewWorker] Ollama stream halted by user request.")
+                            return
+
                         delta = chunk.get('message', {}).get('content', '')
                         if delta:
                             full_content += delta
@@ -1771,10 +1803,10 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
                             self.chunk_received.emit(delta, chunk_count)
 
                             # 即時檢測退化循環 (Degenerate Repetition Detection)
-                            # 若結尾有 2~15 字元的模式重複超過 6 次，或單一字元重複超過 12 次，提早截斷串流以防崩潰
+                            # 支援 2~60 字元的長詞/句重複超過 3 次，或單一字元重複超過 10 次，提早截斷串流以防崩潰
                             if len(full_content) > 80:
-                                if re.search(r'(.{2,15}?)\1{6,}$', full_content) or re.search(r'(.)\1{12,}$', full_content):
-                                    print("[ReviewWorker] Degenerate repetition detected in Ollama stream, breaking early to salvage JSON.")
+                                if re.search(r'(.{2,60}?)\1{3,}$', full_content) or re.search(r'(.)\1{10,}$', full_content):
+                                    print("[ReviewWorker] Degenerate repetition loop detected in Ollama stream, breaking early to salvage JSON.")
                                     salvaged_after_abort = True
                                     break
                 except Exception as stream_err:
@@ -1815,6 +1847,9 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
                             raise ValueError(f"API Error ({response.status_code}):\n{err_body}")
 
                         for line in response.iter_lines():
+                            if self.is_stopped:
+                                print("[ReviewWorker] API stream halted by user request.")
+                                return
                             if not line:
                                 continue
                             if line.startswith("data: "):
@@ -1830,15 +1865,15 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
                                         self.chunk_received.emit(delta, chunk_count)
 
                                         if len(full_content) > 80:
-                                            if re.search(r'(.{2,15}?)\1{6,}$', full_content) or re.search(r'(.)\1{12,}$', full_content):
+                                            if re.search(r'(.{2,60}?)\1{3,}$', full_content) or re.search(r'(.)\1{10,}$', full_content):
                                                 print("[ReviewWorker] Degenerate repetition detected in API stream, breaking early.")
                                                 salvaged_after_abort = True
                                                 break
                                 except Exception:
                                     continue
 
-            # 清除結尾退化重複文字（如 ackackackack... 或 aaaaaa...）
-            full_content = re.sub(r'(.{2,15}?)\1{4,}$', '', full_content)
+            # 清除結尾退化重複文字（支援長達 60 字元的退化迴圈片語）
+            full_content = re.sub(r'(.{2,60}?)\1{3,}$', '', full_content)
             full_content = re.sub(r'(.)\1{8,}$', '', full_content)
 
             raw_content = full_content.strip()
@@ -2502,7 +2537,7 @@ class IssueCard(QFrame):
 
             layout.addWidget(opt_frame)
 
-    def select_option(self, option_idx: int):
+    def select_option(self, option_idx: int, notify: bool = True):
         is_en = (self.lang == "en_US")
         self.selected_option_idx = option_idx
         for idx, btn in enumerate(self.option_buttons):
@@ -2512,7 +2547,7 @@ class IssueCard(QFrame):
             else:
                 btn.setText("Use This" if is_en else "切換至此選項")
                 self.style_button(btn, False)
-        if self.on_option_selected_callback:
+        if notify and self.on_option_selected_callback:
             self.on_option_selected_callback(self.issue_idx, option_idx)
 
     def style_button(self, btn: QPushButton, is_active: bool):
@@ -2543,6 +2578,382 @@ class IssueCard(QFrame):
                 """)
 
 # ==========================================
+# 6.5 單卡輪播與浮動建議組件 (v1.0.0 公開測試版核心創新)
+# ==========================================
+class CardCarouselWidget(QWidget):
+    """
+    單卡聚焦輪播容器 (Single-Card Carousel):
+    將長篇捲動清單轉化為一次僅呈現一張關鍵卡片，並提供「上一張」、「下一張」、
+    首張、尾張快速導航與即時計數器，徹底消除長篇閱讀與審查疲勞。
+    """
+    card_switched = Signal(int)
+
+    def __init__(self, parent=None, is_dark: bool = False, lang: str = "zh_TW"):
+        super().__init__(parent)
+        self.is_dark = is_dark
+        self.lang = lang
+        self.cards: List[QWidget] = []
+        self.current_idx: int = 0
+        self.init_ui()
+
+    def init_ui(self):
+        is_en = (self.lang == "en_US")
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
+
+        # 頂部導航列
+        self.nav_frame = QFrame()
+        self.nav_frame.setStyleSheet("""
+            QFrame {
+                background-color: transparent;
+                border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+                padding-bottom: 4px;
+            }
+        """)
+        nav_layout = QHBoxLayout(self.nav_frame)
+        nav_layout.setContentsMargins(4, 2, 4, 4)
+        nav_layout.setSpacing(6)
+
+        self.btn_first = QPushButton("⏮")
+        self.btn_first.setFixedSize(26, 26)
+        self.btn_first.setToolTip("跳至第一張" if not is_en else "Jump to first card")
+        self.btn_first.clicked.connect(lambda: self.show_index(0))
+        nav_layout.addWidget(self.btn_first)
+
+        self.btn_prev = QPushButton("◀ 上一張" if not is_en else "◀ Prev")
+        self.btn_prev.setFixedHeight(26)
+        self.btn_prev.setFont(QFont("Segoe UI", 9, QFont.Bold))
+        self.btn_prev.clicked.connect(self.go_prev)
+        nav_layout.addWidget(self.btn_prev)
+
+        self.lbl_counter = QLabel("0 / 0")
+        self.lbl_counter.setAlignment(Qt.AlignCenter)
+        self.lbl_counter.setFont(QFont("Segoe UI", 9, QFont.Bold))
+        self.lbl_counter.setStyleSheet("color: #3b82f6; min-width: 110px;")
+        nav_layout.addWidget(self.lbl_counter)
+
+        self.btn_next = QPushButton("下一張 ▶" if not is_en else "Next ▶")
+        self.btn_next.setFixedHeight(26)
+        self.btn_next.setFont(QFont("Segoe UI", 9, QFont.Bold))
+        self.btn_next.clicked.connect(self.go_next)
+        nav_layout.addWidget(self.btn_next)
+
+        self.btn_last = QPushButton("⏭")
+        self.btn_last.setFixedSize(26, 26)
+        self.btn_last.setToolTip("跳至最後一張" if not is_en else "Jump to last card")
+        self.btn_last.clicked.connect(lambda: self.show_index(len(self.cards) - 1))
+        nav_layout.addWidget(self.btn_last)
+
+        nav_layout.addStretch()
+        layout.addWidget(self.nav_frame, 0)
+
+        # 內容卡片滾動展示區
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFrameShape(QFrame.NoFrame)
+
+        self.stacked_widget = QStackedWidget()
+        self.scroll_area.setWidget(self.stacked_widget)
+        layout.addWidget(self.scroll_area, 1)
+
+        self.set_theme_mode(self.is_dark)
+        self.update_nav_state()
+
+    def set_theme_mode(self, is_dark: bool):
+        self.is_dark = is_dark
+        btn_bg = "#1e293b" if is_dark else "#f8fafc"
+        btn_fg = "#f1f5f9" if is_dark else "#0f172a"
+        btn_border = "#334155" if is_dark else "#cbd5e1"
+        btn_style = f"""
+            QPushButton {{
+                background-color: {btn_bg}; color: {btn_fg}; border: 1px solid {btn_border};
+                border-radius: 4px; padding: 2px 8px; font-size: 11px;
+            }}
+            QPushButton:hover {{ background-color: {'#334155' if is_dark else '#e2e8f0'}; }}
+            QPushButton:disabled {{ color: {'#64748b' if is_dark else '#94a3b8'}; border-color: transparent; }}
+        """
+        for b in [self.btn_first, self.btn_prev, self.btn_next, self.btn_last]:
+            b.setStyleSheet(btn_style)
+
+    def set_cards(self, cards: List[QWidget], placeholder_text: str = ""):
+        while self.stacked_widget.count():
+            w = self.stacked_widget.widget(0)
+            self.stacked_widget.removeWidget(w)
+            w.hide()
+            w.setParent(None)
+            w.deleteLater()
+
+        self.cards = list(cards)
+        self.current_idx = 0
+
+        if not self.cards:
+            empty_widget = QWidget()
+            e_layout = QVBoxLayout(empty_widget)
+            lbl = QLabel(placeholder_text or ("✨ 無建議項目" if self.lang != "en_US" else "✨ No suggestions"))
+            lbl.setStyleSheet("color: #10b981; font-weight: bold; padding: 20px; font-size: 12px;")
+            lbl.setAlignment(Qt.AlignCenter)
+            lbl.setWordWrap(True)
+            e_layout.addWidget(lbl)
+            e_layout.addStretch()
+            self.stacked_widget.addWidget(empty_widget)
+        else:
+            for card in self.cards:
+                self.stacked_widget.addWidget(card)
+            self.show_index(0)
+
+        self.update_nav_state()
+
+    def show_index(self, idx: int):
+        if not self.cards:
+            return
+        idx = max(0, min(idx, len(self.cards) - 1))
+        self.current_idx = idx
+        self.stacked_widget.setCurrentIndex(idx)
+        self.update_nav_state()
+        self.card_switched.emit(self.current_idx)
+
+    def go_prev(self):
+        if self.current_idx > 0:
+            self.show_index(self.current_idx - 1)
+
+    def go_next(self):
+        if self.current_idx < len(self.cards) - 1:
+            self.show_index(self.current_idx + 1)
+
+    def update_nav_state(self):
+        total = len(self.cards)
+        is_en = (self.lang == "en_US")
+        if total == 0:
+            self.lbl_counter.setText("0 / 0")
+            self.btn_prev.setEnabled(False)
+            self.btn_next.setEnabled(False)
+            self.btn_first.setEnabled(False)
+            self.btn_last.setEnabled(False)
+        else:
+            self.lbl_counter.setText(f"第 {self.current_idx + 1} / {total} 處" if not is_en else f"Item {self.current_idx + 1} of {total}")
+            self.btn_prev.setEnabled(self.current_idx > 0)
+            self.btn_next.setEnabled(self.current_idx < total - 1)
+            self.btn_first.setEnabled(self.current_idx > 0)
+            self.btn_last.setEnabled(self.current_idx < total - 1)
+
+
+class FloatingCollocationPopup(QFrame):
+    """
+    浮動搭配詞選項卡片 (Floating Collocation Suggestion Card):
+    當滑鼠懸停或點選「修改中全文」的標記搭配詞時彈出。
+    展示各項修訂選項（頂刊標竿、精簡、防禦弱化等），
+    使用者點擊選項後，立即套用至修改中全文與修改後全文，並自動同步卡片狀態。
+    """
+    option_chosen = Signal(int, int)
+
+    def __init__(self, parent=None, is_dark: bool = False, lang: str = "zh_TW"):
+        super().__init__(parent, Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
+        self.is_dark = is_dark
+        self.lang = lang
+        self.current_issue_idx: int = -1
+        self.current_issue: Optional[IssueItem] = None
+        self.option_buttons: List[QPushButton] = []
+        self.init_ui()
+
+    def init_ui(self):
+        self.setFixedWidth(460)
+        self.set_theme_mode(self.is_dark)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(6)
+
+        # 頂部列：標題 + 關閉按鈕
+        top_bar = QHBoxLayout()
+        top_bar.setContentsMargins(0, 0, 0, 0)
+        self.title_lbl = QLabel("🟢 搭配詞與精準用詞替換建議")
+        self.title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        self.title_lbl.setStyleSheet("color: #10b981;")
+        top_bar.addWidget(self.title_lbl)
+        top_bar.addStretch()
+
+        close_btn = QPushButton("✕")
+        close_btn.setFixedSize(22, 22)
+        close_btn.setFont(QFont("Segoe UI", 9, QFont.Bold))
+        close_btn.setStyleSheet("border: none; color: #94a3b8; background: transparent; font-size: 13px;")
+        close_btn.clicked.connect(self.hide)
+        top_bar.addWidget(close_btn)
+        layout.addLayout(top_bar)
+
+        self.orig_lbl = QLabel()
+        self.orig_lbl.setWordWrap(True)
+        self.orig_lbl.setFont(QFont("Segoe UI", 9))
+        layout.addWidget(self.orig_lbl)
+
+        self.comment_lbl = QLabel()
+        self.comment_lbl.setWordWrap(True)
+        self.comment_lbl.setFont(QFont("Segoe UI", 9))
+        layout.addWidget(self.comment_lbl)
+
+        self.options_container = QVBoxLayout()
+        self.options_container.setSpacing(5)
+        layout.addLayout(self.options_container)
+
+    def set_theme_mode(self, is_dark: bool):
+        self.is_dark = is_dark
+        bg = "#1e293b" if is_dark else "#ffffff"
+        border = "#059669" if is_dark else "#10b981"
+        self.setStyleSheet(f"""
+            FloatingCollocationPopup {{
+                background-color: {bg};
+                border: 2px solid {border};
+                border-radius: 8px;
+            }}
+        """)
+
+    def set_issue(self, issue_idx: int, issue: IssueItem, selected_opt_idx: int = 0):
+        self.current_issue_idx = issue_idx
+        self.current_issue = issue
+        is_en = (self.lang == "en_US")
+
+        self.title_lbl.setText("🟢 Natural Collocation Options" if is_en else "🟢 道地搭配詞替換建議 (點擊直接套用)")
+        self.orig_lbl.setText(f"<b>📌 {'Target Snippet' if is_en else '修訂目標詞'}：</b> <code>{html.escape(issue.original_text)}</code>")
+
+        comm = issue.reviewer_comment_en if is_en else (issue.reviewer_comment_zh or issue.reviewer_comment_en)
+        if comm:
+            self.comment_lbl.setText(f"<b>💡 {'Reviewer Note' if is_en else '審稿建議'}：</b> <span style='color: #10b981;'>{html.escape(comm)}</span>")
+            self.comment_lbl.show()
+        else:
+            self.comment_lbl.hide()
+
+        while self.options_container.count():
+            item = self.options_container.takeAt(0)
+            w = item.widget()
+            if w:
+                w.hide()
+                w.deleteLater()
+
+        self.option_buttons.clear()
+
+        for o_idx, opt in enumerate(issue.revision_options):
+            is_active = (o_idx == selected_opt_idx)
+            btn = QPushButton()
+            btn.setCursor(Qt.PointingHandCursor)
+
+            label_text = f"Option {chr(65 + o_idx)}: {opt.style_label}" if is_en else f"選項 {chr(65 + o_idx)}：{opt.style_label}"
+            status_tag = (" [已套用 ✓]" if is_active else "") if not is_en else (" [Applied ✓]" if is_active else "")
+            btn.setText(f"{label_text}{status_tag}\n➔ \"{opt.revised_text}\"")
+            btn.setFont(QFont("Segoe UI", 9))
+
+            if is_active:
+                btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #15803d; color: #ffffff; border: 1px solid #166534;
+                        border-radius: 6px; padding: 6px 10px; text-align: left; font-weight: bold;
+                    }
+                    QPushButton:hover { background-color: #166534; }
+                """)
+            else:
+                if self.is_dark:
+                    btn.setStyleSheet("""
+                        QPushButton {
+                            background-color: #0f172a; color: #6ee7b7; border: 1px solid #059669;
+                            border-radius: 6px; padding: 6px 10px; text-align: left;
+                        }
+                        QPushButton:hover { background-color: #064e3b; color: #ffffff; border-color: #10b981; }
+                    """)
+                else:
+                    btn.setStyleSheet("""
+                        QPushButton {
+                            background-color: #f8fafc; color: #065f46; border: 1px solid #a7f3d0;
+                            border-radius: 6px; padding: 6px 10px; text-align: left;
+                        }
+                        QPushButton:hover { background-color: #d1fae5; border-color: #10b981; }
+                    """)
+
+            btn.clicked.connect(lambda chk=False, idx=o_idx: self.on_click_option(idx))
+            self.option_buttons.append(btn)
+            self.options_container.addWidget(btn)
+
+        self.adjustSize()
+
+    def on_click_option(self, option_idx: int):
+        self.option_chosen.emit(self.current_issue_idx, option_idx)
+        self.hide()
+
+
+class InteractiveWorkingDraftBrowser(QTextBrowser):
+    """
+    修改中全文互動瀏覽器 (Interactive Working Draft View):
+    展示當前草稿，並將搭配詞與語法改進點標記為高亮可點選連結。
+    滑鼠懸停（或點選）高亮詞時，自動在游標位置彈出 FloatingCollocationPopup 供直接切換！
+    """
+    issue_hovered = Signal(int, QPoint)
+    issue_clicked = Signal(int, QPoint)
+
+    def __init__(self, parent=None, is_dark: bool = False, lang: str = "zh_TW"):
+        super().__init__(parent)
+        self.is_dark = is_dark
+        self.lang = lang
+        self.setMouseTracking(True)
+        self.setOpenExternalLinks(False)
+        self.anchorClicked.connect(self.on_anchor_clicked)
+
+        self.hover_timer = QTimer(self)
+        self.hover_timer.setSingleShot(True)
+        self.hover_timer.setInterval(240)
+        self.hover_timer.timeout.connect(self.trigger_hover)
+
+        self.pending_issue_idx: int = -1
+        self.pending_global_pos: QPoint = QPoint()
+        self.set_theme_mode(self.is_dark)
+
+    def set_theme_mode(self, is_dark: bool):
+        self.is_dark = is_dark
+        bg = "#1e293b" if is_dark else "#ffffff"
+        fg = "#f8fafc" if is_dark else "#0f172a"
+        border = "#334155" if is_dark else "#cbd5e1"
+        self.setStyleSheet(f"""
+            QTextBrowser {{
+                background-color: {bg};
+                color: {fg};
+                border: 1px solid {border};
+                border-radius: 6px;
+                padding: 8px;
+                line-height: 1.6;
+            }}
+        """)
+
+    def mouseMoveEvent(self, event):
+        anchor = self.anchorAt(event.pos())
+        if anchor and (anchor.startswith("issue:") or anchor.startswith("colloc:")):
+            try:
+                issue_idx = int(anchor.split(":")[1])
+                self.pending_issue_idx = issue_idx
+                self.pending_global_pos = event.globalPosition().toPoint()
+                if not self.hover_timer.isActive():
+                    self.hover_timer.start()
+                self.viewport().setCursor(Qt.PointingHandCursor)
+            except Exception:
+                pass
+        else:
+            self.hover_timer.stop()
+            self.viewport().setCursor(Qt.IBeamCursor)
+        super().mouseMoveEvent(event)
+
+    def trigger_hover(self):
+        if self.pending_issue_idx >= 0:
+            self.issue_hovered.emit(self.pending_issue_idx, self.pending_global_pos)
+
+    def on_anchor_clicked(self, url):
+        href = url.toString() if hasattr(url, 'toString') else str(url)
+        if href.startswith("issue:") or href.startswith("colloc:"):
+            try:
+                issue_idx = int(href.split(":")[1])
+                self.hover_timer.stop()
+                cursor_pos = self.mapToGlobal(self.cursorRect().bottomRight())
+                self.issue_clicked.emit(issue_idx, cursor_pos)
+            except Exception:
+                pass
+
+
+# ==========================================
 # 7. 主視窗 (三欄式 + 多語言 + 多情境模式 + 章節局部針對性)
 # ==========================================
 class AcademicReviewerApp(QMainWindow):
@@ -2563,6 +2974,9 @@ class AcademicReviewerApp(QMainWindow):
         self.user_interaction_order: List[int] = []
         self.last_clicked_issue_idx: Optional[int] = None
         self.latest_revised_plain_text: str = ""
+        self.latest_working_draft_plain_text: str = ""
+        self.is_reviewing: bool = False
+        self.floating_colloc_popup: Optional[FloatingCollocationPopup] = None
 
         self.elapsed_seconds: int = 0
         self.accumulated_tokens: int = 0
@@ -2784,7 +3198,7 @@ class AcademicReviewerApp(QMainWindow):
         self.splitter.addWidget(self.left_splitter)
 
         # ==========================================
-        # 中間欄位 (1/3)：審查意見整合區（實證建議、搭配詞、句構與邏輯三合一）
+        # 中間欄位 (1/3)：審查意見整合區（修改中全文 + 搭配詞/句構/實證 單卡輪播）
         # ==========================================
         self.middle_widget = QWidget()
         middle_layout = QVBoxLayout(self.middle_widget)
@@ -2800,25 +3214,38 @@ class AcademicReviewerApp(QMainWindow):
         self.critique_tab_widget = QTabWidget()
         self.critique_tab_widget.setFont(QFont("Segoe UI", 10))
 
-        # Tab 1: 實質建議與實證缺失分析
-        self.recs_page = QWidget()
-        recs_page_layout = QVBoxLayout(self.recs_page)
-        recs_page_layout.setContentsMargins(4, 4, 4, 4)
-        recs_page_layout.setSpacing(4)
-        self.recs_title_lbl = QLabel(t["recs_title"])
-        self.recs_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
-        recs_page_layout.addWidget(self.recs_title_lbl)
+        # Tab 0: 📝 修改中全文 (互動修訂，游標懸停/點擊彈出浮動搭配詞卡片)
+        self.working_draft_page = QWidget()
+        working_layout = QVBoxLayout(self.working_draft_page)
+        working_layout.setContentsMargins(4, 4, 4, 4)
+        working_layout.setSpacing(4)
 
-        self.recs_scroll_area = QScrollArea()
-        self.recs_scroll_area.setWidgetResizable(True)
-        self.recs_container = QWidget()
-        self.recs_layout = QVBoxLayout(self.recs_container)
-        self.recs_layout.setContentsMargins(0, 0, 0, 0)
-        self.recs_layout.addStretch()
-        self.recs_scroll_area.setWidget(self.recs_container)
-        recs_page_layout.addWidget(self.recs_scroll_area, 1)
+        working_header = QHBoxLayout()
+        self.working_title_lbl = QLabel(t.get("working_title", "📝 修改中全文 (互動修訂)"))
+        self.working_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        working_header.addWidget(self.working_title_lbl)
+        working_header.addStretch()
 
-        # Tab 2: 搭配詞替換選項與精準用詞編修
+        self.copy_working_btn = QPushButton(t.get("copy_working", "📋 複製修改中全文"))
+        self.copy_working_btn.clicked.connect(self.copy_working_draft_text)
+        working_header.addWidget(self.copy_working_btn)
+        working_layout.addLayout(working_header)
+
+        self.working_draft_browser = InteractiveWorkingDraftBrowser(is_dark=self.is_dark_mode, lang=self.ui_language)
+        self.working_draft_browser.setFont(QFont("Consolas", 11))
+        self.working_draft_browser.setHtml(
+            "<span style='color: #64748b;'>輸入英文草稿並點擊下方「開始智能審查」後，此處將呈現互動式修改中全文；游標移至綠色標記搭配詞上方即可開啟浮動建議卡片！</span>" if not (self.ui_language == "en_US")
+            else "<span style='color: #64748b;'>Interactive working draft will appear here after review. Hover or click highlighted collocations to switch options!</span>"
+        )
+        self.working_draft_browser.issue_hovered.connect(self.show_floating_collocation_popup)
+        self.working_draft_browser.issue_clicked.connect(self.show_floating_collocation_popup)
+        working_layout.addWidget(self.working_draft_browser, 1)
+
+        self.working_legend_lbl = QLabel("🟢 綠色標記：道地搭配詞（懸停/點擊即時更換） ｜ 🔵 藍色底線：句構與邏輯修訂")
+        self.working_legend_lbl.setStyleSheet("font-size: 11px; color: #64748b; margin-top: 2px;")
+        working_layout.addWidget(self.working_legend_lbl)
+
+        # Tab 1: 🔤 搭配詞選項 (單卡輪播檢視)
         self.colloc_page = QWidget()
         colloc_page_layout = QVBoxLayout(self.colloc_page)
         colloc_page_layout.setContentsMargins(4, 4, 4, 4)
@@ -2827,16 +3254,10 @@ class AcademicReviewerApp(QMainWindow):
         self.colloc_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
         colloc_page_layout.addWidget(self.colloc_title_lbl)
 
-        self.colloc_scroll_area = QScrollArea()
-        self.colloc_scroll_area.setWidgetResizable(True)
-        self.colloc_container = QWidget()
-        self.colloc_layout = QVBoxLayout(self.colloc_container)
-        self.colloc_layout.setContentsMargins(0, 0, 0, 0)
-        self.colloc_layout.addStretch()
-        self.colloc_scroll_area.setWidget(self.colloc_container)
-        colloc_page_layout.addWidget(self.colloc_scroll_area, 1)
+        self.colloc_carousel = CardCarouselWidget(is_dark=self.is_dark_mode, lang=self.ui_language)
+        colloc_page_layout.addWidget(self.colloc_carousel, 1)
 
-        # Tab 3: 文法句構、推論缺陷、修辭風格與邏輯矛盾
+        # Tab 2: ⚖️ 句構與邏輯 (單卡輪播檢視)
         self.discourse_page = QWidget()
         discourse_page_layout = QVBoxLayout(self.discourse_page)
         discourse_page_layout.setContentsMargins(4, 4, 4, 4)
@@ -2845,19 +3266,39 @@ class AcademicReviewerApp(QMainWindow):
         self.discourse_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
         discourse_page_layout.addWidget(self.discourse_title_lbl)
 
-        self.discourse_scroll_area = QScrollArea()
-        self.discourse_scroll_area.setWidgetResizable(True)
-        self.discourse_container = QWidget()
-        self.discourse_layout = QVBoxLayout(self.discourse_container)
-        self.discourse_layout.setContentsMargins(0, 0, 0, 0)
-        self.discourse_layout.addStretch()
-        self.discourse_scroll_area.setWidget(self.discourse_container)
-        discourse_page_layout.addWidget(self.discourse_scroll_area, 1)
+        self.discourse_carousel = CardCarouselWidget(is_dark=self.is_dark_mode, lang=self.ui_language)
+        discourse_page_layout.addWidget(self.discourse_carousel, 1)
 
-        self.critique_tab_widget.addTab(self.recs_page, "💡 實證補強")
-        self.critique_tab_widget.addTab(self.colloc_page, "🔤 搭配詞選項")
-        self.critique_tab_widget.addTab(self.discourse_page, "⚖️ 句構與邏輯")
+        # Tab 3: 💡 實質建議與實證缺失分析 (單卡輪播檢視)
+        self.recs_page = QWidget()
+        recs_page_layout = QVBoxLayout(self.recs_page)
+        recs_page_layout.setContentsMargins(4, 4, 4, 4)
+        recs_page_layout.setSpacing(4)
+        self.recs_title_lbl = QLabel(t["recs_title"])
+        self.recs_title_lbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        recs_page_layout.addWidget(self.recs_title_lbl)
+
+        self.recs_carousel = CardCarouselWidget(is_dark=self.is_dark_mode, lang=self.ui_language)
+        recs_page_layout.addWidget(self.recs_carousel, 1)
+
+        # 分頁順序：修改中全文 (0), 搭配詞選項 (1), 句構與邏輯 (2), 實證補強 (3)
+        self.critique_tab_widget.addTab(self.working_draft_page, t.get("tab_working_draft", "📝 修改中全文"))
+        self.critique_tab_widget.addTab(self.colloc_page, t.get("tab_colloc", "🔤 搭配詞選項"))
+        self.critique_tab_widget.addTab(self.discourse_page, t.get("tab_discourse", "⚖️ 句構與邏輯"))
+        self.critique_tab_widget.addTab(self.recs_page, t.get("tab_recs", "💡 實證補強"))
         middle_layout.addWidget(self.critique_tab_widget, 1)
+
+        # 浮動搭配詞卡片實例 (全域彈出)
+        self.floating_colloc_popup = FloatingCollocationPopup(self, is_dark=self.is_dark_mode, lang=self.ui_language)
+        self.floating_colloc_popup.option_chosen.connect(self.handle_option_selection)
+
+        # 保持舊有別名相容性
+        self.recs_scroll_area = self.recs_carousel.scroll_area
+        self.colloc_scroll_area = self.colloc_carousel.scroll_area
+        self.discourse_scroll_area = self.discourse_carousel.scroll_area
+        self.recs_layout = self.recs_carousel.layout()
+        self.colloc_layout = self.colloc_carousel.layout()
+        self.discourse_layout = self.discourse_carousel.layout()
 
         self.splitter.addWidget(self.middle_widget)
 
@@ -3037,24 +3478,12 @@ class AcademicReviewerApp(QMainWindow):
             return
         self.clear_cards()
         t = I18N.get(self.ui_language, I18N["zh_TW"])
-
-        lbl_recs = QLabel(t["recs_placeholder_text"])
-        lbl_recs.setStyleSheet("color: #94a3b8; font-size: 11px; padding: 10px;")
-        lbl_recs.setWordWrap(True)
-        self.recs_layout.addWidget(lbl_recs)
-        self.recs_layout.addStretch()
-
-        lbl_colloc = QLabel(t["colloc_placeholder_text"])
-        lbl_colloc.setStyleSheet("color: #94a3b8; font-size: 11px; padding: 10px;")
-        lbl_colloc.setWordWrap(True)
-        self.colloc_layout.addWidget(lbl_colloc)
-        self.colloc_layout.addStretch()
-
-        lbl_disc = QLabel(t["discourse_placeholder_text"])
-        lbl_disc.setStyleSheet("color: #94a3b8; font-size: 11px; padding: 10px;")
-        lbl_disc.setWordWrap(True)
-        self.discourse_layout.addWidget(lbl_disc)
-        self.discourse_layout.addStretch()
+        if hasattr(self, 'recs_carousel'):
+            self.recs_carousel.set_cards([], t["recs_placeholder_text"])
+        if hasattr(self, 'colloc_carousel'):
+            self.colloc_carousel.set_cards([], t["colloc_placeholder_text"])
+        if hasattr(self, 'discourse_carousel'):
+            self.discourse_carousel.set_cards([], t["discourse_placeholder_text"])
 
     # --- 語言切換邏輯 (繁體中文 / Pure English) ---
     def toggle_language(self):
@@ -3111,11 +3540,18 @@ class AcademicReviewerApp(QMainWindow):
         # 各欄位標題
         self.draft_title_lbl.setText(t["draft_title"])
         self.revised_title_lbl.setText(t["revised_title"])
+        if hasattr(self, 'working_title_lbl'):
+            self.working_title_lbl.setText(t.get("working_title", "📝 修改中全文 (互動修訂)"))
+        if hasattr(self, 'copy_working_btn'):
+            self.copy_working_btn.setText(t.get("copy_working", "📋 複製修改中全文"))
         self.recs_title_lbl.setText(t["recs_title"])
         self.colloc_title_lbl.setText(t["colloc_title"])
         self.discourse_title_lbl.setText(t["discourse_title"])
         self.quick_fix_btn.setText(t["quick_fix_btn"])
-        self.review_btn.setText(t["btn_start_review"])
+        if not self.is_reviewing:
+            self.review_btn.setText(t["btn_start_review"])
+        else:
+            self.review_btn.setText(t.get("btn_stop_review", "🛑 終止審查 (Stop Review)"))
         self.sync_to_left_btn.setText(t["sync_left"])
         self.copy_btn.setText(t["copy_revised"])
 
@@ -3124,13 +3560,15 @@ class AcademicReviewerApp(QMainWindow):
             rec_cnt = len(getattr(self.current_report, 'research_recommendations', []))
             colloc_cnt = len([i for i in self.current_report.issues if i.category == "Collocation Defect"])
             disc_cnt = len([i for i in self.current_report.issues if i.category != "Collocation Defect"])
-            self.critique_tab_widget.setTabText(0, f"💡 {'Evidence Defenses' if is_en else '實證補強'} ({rec_cnt})")
+            self.critique_tab_widget.setTabText(0, t.get("tab_working_draft", "📝 修改中全文"))
             self.critique_tab_widget.setTabText(1, f"🔤 {'Collocations' if is_en else '搭配詞選項'} ({colloc_cnt})")
             self.critique_tab_widget.setTabText(2, f"⚖️ {'Syntax & Logic' if is_en else '句構與邏輯'} ({disc_cnt})")
+            self.critique_tab_widget.setTabText(3, f"💡 {'Evidence Defenses' if is_en else '實證補強'} ({rec_cnt})")
         else:
-            self.critique_tab_widget.setTabText(0, t.get("tab_recs", "💡 實證補強"))
+            self.critique_tab_widget.setTabText(0, t.get("tab_working_draft", "📝 修改中全文"))
             self.critique_tab_widget.setTabText(1, t.get("tab_colloc", "🔤 搭配詞選項"))
             self.critique_tab_widget.setTabText(2, t.get("tab_discourse", "⚖️ 句構與邏輯"))
+            self.critique_tab_widget.setTabText(3, t.get("tab_recs", "💡 實證補強"))
 
         # 右欄監控頁面
         self.monitor_title_lbl.setText(t.get("monitor_title", "📡 智能審查執行監控"))
@@ -3283,7 +3721,7 @@ class AcademicReviewerApp(QMainWindow):
             """
             for b in [self.refresh_btn, self.env_setup_btn, self.theme_btn, self.api_settings_btn,
                       self.sync_to_left_btn, self.copy_btn, self.update_btn, self.lang_btn, self.load_sample_btn,
-                      self.chat_switch_general_btn, self.chat_clear_btn]:
+                      self.chat_switch_general_btn, self.chat_clear_btn, getattr(self, 'copy_working_btn', QPushButton())]:
                 b.setStyleSheet(btn_normal)
 
             self.quick_fix_btn.setStyleSheet("""
@@ -3425,7 +3863,7 @@ class AcademicReviewerApp(QMainWindow):
             """
             for b in [self.refresh_btn, self.env_setup_btn, self.theme_btn, self.api_settings_btn,
                       self.sync_to_left_btn, self.copy_btn, self.update_btn, self.lang_btn, self.load_sample_btn,
-                      self.chat_switch_general_btn, self.chat_clear_btn]:
+                      self.chat_switch_general_btn, self.chat_clear_btn, getattr(self, 'copy_working_btn', QPushButton())]:
                 b.setStyleSheet(btn_normal)
 
             self.quick_fix_btn.setStyleSheet("""
@@ -3531,7 +3969,21 @@ class AcademicReviewerApp(QMainWindow):
             self.left_splitter.setStyleSheet(splitter_style)
             self.splitter.setStyleSheet(splitter_style)
 
+        if hasattr(self, 'working_title_lbl'):
+            self.working_title_lbl.setStyleSheet(f"color: {text_main};")
+        if hasattr(self, 'working_draft_browser') and self.working_draft_browser:
+            self.working_draft_browser.set_theme_mode(dark)
+        if hasattr(self, 'floating_colloc_popup') and self.floating_colloc_popup:
+            self.floating_colloc_popup.set_theme_mode(dark)
+        if hasattr(self, 'colloc_carousel') and self.colloc_carousel:
+            self.colloc_carousel.set_theme_mode(dark)
+        if hasattr(self, 'discourse_carousel') and self.discourse_carousel:
+            self.discourse_carousel.set_theme_mode(dark)
+        if hasattr(self, 'recs_carousel') and self.recs_carousel:
+            self.recs_carousel.set_theme_mode(dark)
+
         self.update_legend_text()
+        self.update_working_draft_view()
         self.update_revised_article_view()
         self.run_preflight_analysis()
         self.render_all_chat_messages(self._active_streaming_text)
@@ -3719,8 +4171,12 @@ class AcademicReviewerApp(QMainWindow):
         self.status_banner.setText(msg)
         self.status_banner.setStyleSheet("color: #10b981; font-weight: bold; font-size: 11px;")
 
-    # --- 啟動審查 ---
+    # --- 啟動與終止審查 ---
     def start_review(self):
+        if self.is_reviewing:
+            self.stop_review()
+            return
+
         text = self.text_editor.toPlainText().strip()
         is_en = (self.ui_language == "en_US")
         t = I18N.get(self.ui_language, I18N["zh_TW"])
@@ -3752,8 +4208,16 @@ class AcademicReviewerApp(QMainWindow):
         self.accumulated_tokens = 0
         self.timer.start(1000)
 
-        self.review_btn.setEnabled(False)
-        self.review_btn.setText(t["btn_reviewing"])
+        self.is_reviewing = True
+        self.review_btn.setEnabled(True)
+        self.review_btn.setText(t.get("btn_stop_review", "🛑 終止審查 (Stop Review)"))
+        self.review_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #dc2626; color: #ffffff; border: 1px solid #b91c1c;
+                border-radius: 4px; padding: 4px 12px; font-weight: bold; font-size: 11px;
+            }
+            QPushButton:hover { background-color: #b91c1c; }
+        """)
         self.progress_bar.setVisible(True)
         self.update_live_status_ui(model_name)
 
@@ -3779,6 +4243,20 @@ class AcademicReviewerApp(QMainWindow):
         self.worker.finished.connect(self.on_review_finished)
         self.worker.error.connect(self.on_review_error)
         self.worker.start()
+
+    def stop_review(self):
+        if hasattr(self, 'worker') and self.worker and self.worker.isRunning():
+            self.worker.stop()
+            self.worker.wait(1000)
+        self.is_reviewing = False
+        self.timer.stop()
+        t = I18N.get(self.ui_language, I18N["zh_TW"])
+        self.review_btn.setText(t["btn_start_review"])
+        self.review_btn.setStyleSheet("")
+        self.progress_bar.setVisible(False)
+        is_en = (self.ui_language == "en_US")
+        self.status_banner.setText("⏹️ 審查已由使用者手動終止。" if not is_en else "⏹️ Review stopped by user.")
+        self.status_banner.setStyleSheet("color: #f59e0b; font-weight: bold; font-size: 11px;")
 
     def on_timer_tick(self):
         self.elapsed_seconds += 1
@@ -3815,21 +4293,18 @@ class AcademicReviewerApp(QMainWindow):
         self.live_stream_box.clear()
         self.monitor_badge_lbl.setText("🔄 審查進行中..." if not is_en else "🔄 Reviewing...")
 
-        # 2. 於中間各分頁顯示進行中指示
-        recs_hint = QLabel("⏳ 審查進行中：正在生成研究策略與實證缺失分析..." if not is_en else "⏳ Reviewing: generating strategic proposals and evidence gaps...")
-        recs_hint.setStyleSheet("color: #a855f7; font-size: 11px; font-weight: bold; padding: 10px;")
-        self.recs_layout.addWidget(recs_hint)
-        self.recs_layout.addStretch()
-
-        colloc_hint = QLabel("⏳ 審查進行中：正在窮舉道地搭配詞與多風格替換..." if not is_en else "⏳ Reviewing: evaluating idiomatic collocations and lexical options...")
-        colloc_hint.setStyleSheet("color: #10b981; font-size: 11px; font-weight: bold; padding: 10px;")
-        self.colloc_layout.addWidget(colloc_hint)
-        self.colloc_layout.addStretch()
-
-        discourse_hint = QLabel("⏳ 審查進行中：正在檢視文法句構、推論缺陷與邏輯矛盾..." if not is_en else "⏳ Reviewing: analyzing discourse structure, grammar and logic...")
-        discourse_hint.setStyleSheet("color: #3b82f6; font-size: 11px; font-weight: bold; padding: 10px;")
-        self.discourse_layout.addWidget(discourse_hint)
-        self.discourse_layout.addStretch()
+        # 2. 於中間各單卡輪播與修改中分頁顯示進行中指示
+        if hasattr(self, 'recs_carousel') and self.recs_carousel:
+            self.recs_carousel.set_cards([], "⏳ 審查進行中：正在生成研究策略與實證缺失分析..." if not is_en else "⏳ Reviewing: generating strategic proposals and evidence gaps...")
+        if hasattr(self, 'colloc_carousel') and self.colloc_carousel:
+            self.colloc_carousel.set_cards([], "⏳ 審查進行中：正在窮舉道地搭配詞與多風格替換..." if not is_en else "⏳ Reviewing: evaluating idiomatic collocations and lexical options...")
+        if hasattr(self, 'discourse_carousel') and self.discourse_carousel:
+            self.discourse_carousel.set_cards([], "⏳ 審查進行中：正在檢視文法句構、推論缺陷與邏輯矛盾..." if not is_en else "⏳ Reviewing: analyzing discourse structure, grammar and logic...")
+        if hasattr(self, 'working_draft_browser') and self.working_draft_browser:
+            self.working_draft_browser.setHtml(
+                "<span style='color: #64748b;'>⏳ 正在進行深度審查... 完成後將在此呈現可點選替換搭配詞的修改中全文。</span>" if not is_en
+                else "<span style='color: #64748b;'>⏳ Review in progress... interactive working draft will appear here.</span>"
+            )
 
     @Slot(str, int)
     def on_chunk_received(self, delta: str, chunk_count: int):
@@ -3844,7 +4319,9 @@ class AcademicReviewerApp(QMainWindow):
     @Slot(AcademicReviewReport)
     def on_review_finished(self, report: AcademicReviewReport):
         self.timer.stop()
+        self.is_reviewing = False
         self.review_btn.setEnabled(True)
+        self.review_btn.setStyleSheet("")
         is_en = (self.ui_language == "en_US")
         t = I18N.get(self.ui_language, I18N["zh_TW"])
         self.review_btn.setText(t["btn_start_review"])
@@ -3879,67 +4356,41 @@ class AcademicReviewerApp(QMainWindow):
 
         self.clear_cards()
 
-        # 1. 渲染中欄 Tab 1：審查實質建議與實證缺失分析 (Research Recommendations)
+        # 1. 裝載 Tab 3：實質建議與實證缺失分析 (單卡輪播)
         recommendations = getattr(report, 'research_recommendations', [])
-        if recommendations:
-            rec_header_text = f"🔬 Strategic & Contextual Recommendations ({len(recommendations)} Items):" if is_en else f"🔬 審查員實質建議：上下文完整性與論證/實驗補強 ({len(recommendations)} 項):"
-            rec_header = QLabel(rec_header_text)
-            rec_header.setStyleSheet("font-weight: bold; color: #8b5cf6; font-size: 12px; margin-top: 2px; margin-bottom: 4px;")
-            self.recs_layout.addWidget(rec_header)
+        rec_cards = []
+        for rec in recommendations:
+            rec_card = ResearchRecommendationCard(rec, is_dark=self.is_dark_mode, lang=self.ui_language, on_discuss_callback=self.open_chat_for_rec)
+            rec_cards.append(rec_card)
+        self.recs_carousel.set_cards(rec_cards, placeholder_text="✨ 論點完整嚴謹，未發現重大實證或方法缺失。" if not is_en else "✨ Solid reasoning; no critical evidence gaps identified.")
 
-            for rec in recommendations:
-                rec_card = ResearchRecommendationCard(rec, is_dark=self.is_dark_mode, lang=self.ui_language, on_discuss_callback=self.open_chat_for_rec)
-                self.recs_layout.addWidget(rec_card)
-        else:
-            no_rec = QLabel("✨ Solid reasoning; no critical evidence gaps identified." if is_en else "✨ 論點完整嚴謹，未發現重大實證或方法缺失。")
-            no_rec.setStyleSheet("color: #10b981; font-weight: bold; margin-top: 6px; padding: 8px;")
-            self.recs_layout.addWidget(no_rec)
-        self.recs_layout.addStretch()
-
-        # 分流搭配詞與文法/邏輯問題，確保雙軌並行且不互斥
+        # 2. 裝載 Tab 1：搭配詞替換選項 (單卡輪播)
         colloc_items = [(idx, issue) for idx, issue in enumerate(report.issues) if issue.category == "Collocation Defect"]
+        colloc_cards = []
+        for idx, issue in colloc_items:
+            card = IssueCard(idx, issue, self.handle_option_selection, is_dark=self.is_dark_mode, lang=self.ui_language, on_discuss_callback=self.open_chat_for_issue)
+            colloc_cards.append(card)
+        self.colloc_carousel.set_cards(colloc_cards, placeholder_text="✨ 搭配詞自然道地，無明顯生硬用詞！" if not is_en else "✨ Idiomatic and natural word pairings throughout.")
+
+        # 3. 裝載 Tab 2：句構與邏輯 (單卡輪播)
         discourse_items = [(idx, issue) for idx, issue in enumerate(report.issues) if issue.category != "Collocation Defect"]
-
-        # 2. 渲染中欄 Tab 2：搭配詞替換選項與精準用詞編修 (Collocations)
-        if colloc_items:
-            c_header_text = f"🟢 Natural Collocations & Lexical Precision ({len(colloc_items)} Points):" if is_en else f"🟢 道地搭配詞替換與精準用詞 ({len(colloc_items)} 處):"
-            c_header = QLabel(c_header_text)
-            c_header.setStyleSheet("font-weight: bold; color: #059669; font-size: 12px; margin-top: 2px; margin-bottom: 4px;")
-            self.colloc_layout.addWidget(c_header)
-
-            for idx, issue in colloc_items:
-                card = IssueCard(idx, issue, self.handle_option_selection, is_dark=self.is_dark_mode, lang=self.ui_language, on_discuss_callback=self.open_chat_for_issue)
-                self.colloc_layout.addWidget(card)
-        else:
-            no_colloc = QLabel("✨ Idiomatic and natural word pairings throughout." if is_en else "✨ 搭配詞自然道地，無明顯生硬用詞！")
-            no_colloc.setStyleSheet("color: #10b981; font-weight: bold; margin-top: 6px; padding: 8px;")
-            self.colloc_layout.addWidget(no_colloc)
-        self.colloc_layout.addStretch()
-
-        # 3. 渲染中欄 Tab 3：文法句構、推論缺陷、修辭風格與邏輯矛盾 (Discourse, Logic & Grammar)
-        if discourse_items:
-            d_header_text = f"✍️ Discourse, Logic, Rhetoric & Grammar Critiques ({len(discourse_items)} Points):" if is_en else f"✍️ 文法句構、推論缺陷、修辭風格與邏輯矛盾 ({len(discourse_items)} 處改進點):"
-            d_header = QLabel(d_header_text)
-            d_header.setStyleSheet("font-weight: bold; color: #3b82f6; font-size: 12px; margin-top: 2px; margin-bottom: 4px;")
-            self.discourse_layout.addWidget(d_header)
-
-            for idx, issue in discourse_items:
-                card = IssueCard(idx, issue, self.handle_option_selection, is_dark=self.is_dark_mode, lang=self.ui_language, on_discuss_callback=self.open_chat_for_issue)
-                self.discourse_layout.addWidget(card)
-        else:
-            no_disc = QLabel("✨ Flawless grammar and logically sound discourse." if is_en else "✨ 文法正確，論證嚴密，無邏輯或修辭缺陷！")
-            no_disc.setStyleSheet("color: #10b981; font-weight: bold; margin-top: 6px; padding: 8px;")
-            self.discourse_layout.addWidget(no_disc)
-        self.discourse_layout.addStretch()
+        discourse_cards = []
+        for idx, issue in discourse_items:
+            card = IssueCard(idx, issue, self.handle_option_selection, is_dark=self.is_dark_mode, lang=self.ui_language, on_discuss_callback=self.open_chat_for_issue)
+            discourse_cards.append(card)
+        self.discourse_carousel.set_cards(discourse_cards, placeholder_text="✨ 文法正確，論證嚴密，無邏輯或修辭缺陷！" if not is_en else "✨ Flawless grammar and logically sound discourse.")
 
         # 4. 更新中欄 Tab 標題與數量徽章
-        self.critique_tab_widget.setTabText(0, f"💡 {'Evidence Defenses' if is_en else '實證補強'} ({len(recommendations)})")
+        self.critique_tab_widget.setTabText(0, t.get("tab_working_draft", "📝 修改中全文"))
         self.critique_tab_widget.setTabText(1, f"🔤 {'Collocations' if is_en else '搭配詞選項'} ({len(colloc_items)})")
         self.critique_tab_widget.setTabText(2, f"⚖️ {'Syntax & Logic' if is_en else '句構與邏輯'} ({len(discourse_items)})")
+        self.critique_tab_widget.setTabText(3, f"💡 {'Evidence Defenses' if is_en else '實證補強'} ({len(recommendations)})")
 
+        # 5. 更新「修改中全文」與「修改後全文」
+        self.update_working_draft_view()
         self.update_revised_article_view()
 
-        # 5. 自動切換右側欄位至互動辯護與對話工作台 (Index 1)
+        # 6. 自動切換右側欄位至互動辯護與對話工作台 (Index 1)
         self.right_stack.setCurrentIndex(1)
         self.monitor_badge_lbl.setText("✅ 審查完成" if not is_en else "✅ Complete")
         if not self.chat_history:
@@ -3948,7 +4399,16 @@ class AcademicReviewerApp(QMainWindow):
     @Slot(str)
     def on_review_error(self, err_msg: str):
         self.timer.stop()
+        self.is_reviewing = False
         self.review_btn.setEnabled(True)
+        self.review_btn.setStyleSheet("")
+        t = I18N.get(self.ui_language, I18N["zh_TW"])
+        self.review_btn.setText(t["btn_start_review"])
+        self.progress_bar.setVisible(False)
+        self.status_banner.setText("❌ Error occurred during review.")
+        self.status_banner.setStyleSheet("color: #ef4444; font-weight: bold; font-size: 11px;")
+        self.assessment_box.setHtml(f"<span style='color: #ef4444;'>❌ Error: {html.escape(err_msg)}</span>")
+        QMessageBox.critical(self, "Review Failed", f"Could not complete review:\n{err_msg}")
         t = I18N.get(self.ui_language, I18N["zh_TW"])
         self.review_btn.setText(t["btn_start_review"])
         self.progress_bar.setVisible(False)
@@ -3958,14 +4418,12 @@ class AcademicReviewerApp(QMainWindow):
         QMessageBox.critical(self, "Review Failed", f"Could not complete review:\n{err_msg}")
 
     def clear_cards(self):
-        for layout in [self.recs_layout, self.colloc_layout, self.discourse_layout]:
-            while layout.count():
-                item = layout.takeAt(0)
-                widget = item.widget()
-                if widget:
-                    widget.hide()
-                    widget.setParent(None)
-                    widget.deleteLater()
+        if hasattr(self, 'colloc_carousel') and self.colloc_carousel:
+            self.colloc_carousel.set_cards([])
+        if hasattr(self, 'discourse_carousel') and self.discourse_carousel:
+            self.discourse_carousel.set_cards([])
+        if hasattr(self, 'recs_carousel') and self.recs_carousel:
+            self.recs_carousel.set_cards([])
 
     def handle_option_selection(self, issue_idx: int, option_idx: int):
         self.selected_options[issue_idx] = option_idx
@@ -3973,7 +4431,50 @@ class AcademicReviewerApp(QMainWindow):
             self.user_interaction_order.remove(issue_idx)
         self.user_interaction_order.append(issue_idx)
         self.last_clicked_issue_idx = issue_idx
+
+        # 同步更新單卡輪播中現有 IssueCard 之按鈕狀態 (避免遞迴通知)
+        if hasattr(self, 'colloc_carousel') and self.colloc_carousel:
+            for card in self.colloc_carousel.cards:
+                if isinstance(card, IssueCard) and card.issue_idx == issue_idx:
+                    card.select_option(option_idx, notify=False)
+        if hasattr(self, 'discourse_carousel') and self.discourse_carousel:
+            for card in self.discourse_carousel.cards:
+                if isinstance(card, IssueCard) and card.issue_idx == issue_idx:
+                    card.select_option(option_idx, notify=False)
+
+        self.update_working_draft_view()
         self.update_revised_article_view()
+
+    def show_floating_collocation_popup(self, issue_idx: int, pos: QPoint):
+        if not self.current_report or not self.current_report.issues:
+            return
+        if issue_idx < 0 or issue_idx >= len(self.current_report.issues):
+            return
+        issue = self.current_report.issues[issue_idx]
+        selected_opt = self.selected_options.get(issue_idx, 0)
+        self.floating_colloc_popup.set_issue(issue_idx, issue, selected_opt)
+
+        screen = QApplication.primaryScreen().availableGeometry()
+        x = pos.x()
+        y = pos.y() + 12
+        if x + self.floating_colloc_popup.width() > screen.right() - 10:
+            x = screen.right() - self.floating_colloc_popup.width() - 15
+        if y + self.floating_colloc_popup.height() > screen.bottom() - 10:
+            y = max(pos.y() - self.floating_colloc_popup.height() - 15, 10)
+
+        self.floating_colloc_popup.move(x, y)
+        self.floating_colloc_popup.show()
+        self.floating_colloc_popup.raise_()
+
+    def copy_working_draft_text(self):
+        text_to_copy = self.latest_working_draft_plain_text or self.latest_revised_plain_text
+        if not text_to_copy:
+            return
+        QApplication.clipboard().setText(text_to_copy)
+        is_en = (self.ui_language == "en_US")
+        msg = "Copied working draft text to clipboard!" if is_en else "已複製修改中全文至剪貼簿！"
+        self.status_banner.setText(msg)
+        self.status_banner.setStyleSheet("color: #10b981; font-weight: bold; font-size: 11px;")
 
     def find_span_in_text(self, full_text: str, snippet: str, search_start: int = 0) -> Tuple[int, int]:
         clean = snippet.strip()
@@ -4196,6 +4697,7 @@ class AcademicReviewerApp(QMainWindow):
                 continue
 
             revised_snippet = chosen_opt.revised_text.strip()
+            revised_snippet = re.sub(r'[\.]{2,}|…', '', revised_snippet).strip()
             is_recent = (idx == self.last_clicked_issue_idx)
 
             children = [c for c in nested_children.get(idx, []) if c not in suppressed_indices]
@@ -4269,6 +4771,100 @@ class AcademicReviewerApp(QMainWindow):
         self.latest_revised_plain_text = "".join(plain_parts)
         full_html = "".join(html_parts).replace("\n", "<br>")
         self.revised_browser.setHtml(full_html)
+
+    def update_working_draft_view(self):
+        if not hasattr(self, 'working_draft_browser') or not self.working_draft_browser:
+            return
+
+        original_draft = self.text_editor.toPlainText()
+        if not self.current_report or not self.current_report.issues:
+            self.latest_working_draft_plain_text = original_draft
+            self.working_draft_browser.setPlainText(original_draft)
+            return
+
+        issues = self.current_report.issues
+        is_dark = self.is_dark_mode
+
+        # 取得 issue spans
+        issue_spans = []
+        used_spans = []
+        for idx, issue in enumerate(issues):
+            search_start = 0
+            for (us_s, us_e, us_idx) in used_spans:
+                if issues[us_idx].original_text.strip() == issue.original_text.strip():
+                    search_start = max(search_start, us_e)
+
+            s, e = self.find_span_in_text(original_draft, issue.original_text, search_start=search_start)
+            if s == -1 and search_start > 0:
+                s, e = self.find_span_in_text(original_draft, issue.original_text, search_start=0)
+
+            if s != -1:
+                issue_spans.append((s, e, idx))
+                used_spans.append((s, e, idx))
+
+        chosen_revisions = {}
+        for idx, issue in enumerate(issues):
+            opt_idx = self.selected_options.get(idx, 0)
+            if opt_idx < len(issue.revision_options):
+                chosen_revisions[idx] = issue.revision_options[opt_idx]
+            elif issue.revision_options:
+                chosen_revisions[idx] = issue.revision_options[0]
+            else:
+                chosen_revisions[idx] = None
+
+        # 依位置排序並排除直接衝突重疊
+        issue_spans.sort(key=lambda x: x[0])
+        non_overlap_spans = []
+        last_e = -1
+        for s, e, idx in issue_spans:
+            if s >= last_e:
+                non_overlap_spans.append((s, e, idx))
+                last_e = e
+
+        html_parts = []
+        plain_parts = []
+        curr_pos = 0
+
+        for s, e, idx in non_overlap_spans:
+            if s > curr_pos:
+                unmodified = original_draft[curr_pos:s]
+                plain_parts.append(unmodified)
+                html_parts.append(html.escape(unmodified))
+
+            issue = issues[idx]
+            chosen_opt = chosen_revisions.get(idx)
+            if chosen_opt:
+                rev_text = chosen_opt.revised_text.strip()
+                rev_text = re.sub(r'[\.]{2,}|…', '', rev_text).strip()
+            else:
+                rev_text = issue.original_text.strip()
+
+            is_colloc = (issue.category == "Collocation Defect")
+            if is_colloc:
+                bg = "#064e3b" if is_dark else "#d1fae5"
+                fg = "#a7f3d0" if is_dark else "#065f46"
+                border = "#10b981" if is_dark else "#059669"
+                tip = f"🟢 搭配詞選項 (點擊或懸停更換): {chosen_opt.style_label if chosen_opt else ''}"
+                anchor_tag = f"<a href='colloc:{idx}' style='background-color: {bg}; color: {fg}; font-weight: bold; text-decoration: none; border-bottom: 2px dashed {border}; border-radius: 3px; padding: 1px 4px; cursor: pointer;' title='{html.escape(tip)}'>{html.escape(rev_text)}</a>"
+            else:
+                bg = "#1e3a8a" if is_dark else "#dbeafe"
+                fg = "#bfdbfe" if is_dark else "#1e40af"
+                border = "#3b82f6" if is_dark else "#2563eb"
+                tip = f"🔵 句構與邏輯 (點擊檢視修訂): {chosen_opt.style_label if chosen_opt else ''}"
+                anchor_tag = f"<a href='issue:{idx}' style='background-color: {bg}; color: {fg}; font-weight: bold; text-decoration: none; border-bottom: 2px solid {border}; border-radius: 3px; padding: 1px 4px; cursor: pointer;' title='{html.escape(tip)}'>{html.escape(rev_text)}</a>"
+
+            plain_parts.append(rev_text)
+            html_parts.append(anchor_tag)
+            curr_pos = e
+
+        if curr_pos < len(original_draft):
+            remainder = original_draft[curr_pos:]
+            plain_parts.append(remainder)
+            html_parts.append(html.escape(remainder))
+
+        self.latest_working_draft_plain_text = "".join(plain_parts)
+        full_html = "".join(html_parts).replace("\n", "<br>")
+        self.working_draft_browser.setHtml(full_html)
 
     def sync_revised_to_left(self):
         if not self.latest_revised_plain_text:

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 build_release.py
-Automated release builder for LibreLlama Lab Editor v0.9.3.
+Automated release builder for LibreLlama Lab Editor v1.0.0 (公開測試版).
 1. Compiles uninstaller (uninstall.exe)
 2. Compiles application onedir bundle (LibreLlamaLabEditor)
 3. Bundles uninstall.exe and version.json into dist/LibreLlamaLabEditor/
 4. Compresses application directory into app_bundle.zip
-5. Compiles single-file setup installer (LibreLlamaLabEditor_Setup_v0.9.3.exe)
+5. Compiles single-file setup installer (LibreLlamaLabEditor_Setup_v1.0.0.exe)
 """
 import os
 import sys
@@ -19,7 +19,7 @@ PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 DIST_DIR = os.path.join(PROJECT_DIR, "dist")
 BUILD_DIR = os.path.join(PROJECT_DIR, "build")
 APP_NAME = "LibreLlamaLabEditor"
-SETUP_NAME = "LibreLlamaLabEditor_Setup_v0.9.3"
+SETUP_NAME = "LibreLlamaLabEditor_Setup_v1.0.0"
 
 def run_cmd(cmd_list, desc):
     print(f"\n==========================================")

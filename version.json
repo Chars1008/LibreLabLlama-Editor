@@ -1,6 +1,6 @@
 {
-  "latest_version": "0.9.3",
-  "release_date": "2026-10-16",
-  "download_url": "https://github.com/Chars1008/LibreLabLlama-Editor/releases/download/v0.9.3/LibreLlamaLabEditor_Setup_v0.9.3.exe",
-  "changelog": "【v0.9.3 更新紀錄 ─ 封閉開發版 (Closed Development Pre-release)】\n1. 專案品牌全新升級為 LibreLlama Lab Editor，全面優化多情境學術與實驗室寫作工作流\n2. 智慧線上自動更新修復：重構 UpdateCheckWorker，自動支援 GitHub 遠端與本機雙軌解析，杜絕缺少協定 (Missing Protocol) 與路徑異常\n3. 零 LLM 依賴之學術 NLP 規則管線 (spaCy + Regex)：打造獨立可插拔模組 academic_nlp_pipeline.py，於送審前執行毫秒級語法與文風分析\n4. 確定性自動無損修正 (Auto-Sanitize)：自動修復科學單位空格 (如 10mL -> 10 mL, 50uM -> 50 uM, 37°C -> 37 °C, 24h -> 24 h) 與及物動詞多餘介系詞 (如 discuss about -> discuss, emphasize on -> emphasize)\n5. 深度結構化語言學規則診斷 (Rule-Based Diagnostics)：精準捕捉主謂一致性 (SVA)、中式雙重連接詞、句首裸露代名詞、過度名詞化以及被動語態與長句標記"
+  "latest_version": "1.0.0",
+  "release_date": "2026-10-22",
+  "download_url": "https://github.com/Chars1008/LibreLabLlama-Editor/releases/download/v1.0.0/LibreLlamaLabEditor_Setup_v1.0.0.exe",
+  "changelog": "【v1.0.0 更新紀錄 ─ 公開測試版 (Open Beta Release)】\n1. 中間建議卡片改為單卡聚焦輪播檢視 (CardCarouselWidget)：一次僅呈現一張關鍵卡片，設有「上一張」、「下一張」、首末張跳轉與卡片計數器，徹底消除長篇捲動與審查疲勞\n2. 中間欄增設「修改中全文」互動修訂單元 (Interactive Working Draft)：於全文中高亮標記搭配詞與句構改進點，游標懸停 (Hover) 或點擊直接彈出浮動卡片 (FloatingCollocationPopup) 供使用者即時切換選項，並無縫套用至修改後全文\n3. 新增「終止審查」按鈕與退化迴圈即時熔斷機制：推論期間審查按鈕轉為紅色「🛑 終止審查」，點擊可立即中斷推論；擴展長達 60 字元重複片語檢測正則，防止模型陷入無窮迴圈\n4. 破除模型生成惰性與句子對齊修復：解除 System Prompt 內人為 3~6 處數量束縛，全面施行地毯式逐句檢驗；嚴禁 LLM 使用省略號，並導入邊界對齊演算法，杜絕修訂全文主詞重複問題\n5. 專案正式進入公開測試階段 (Open Beta)，全面優化多語系、主題介面與端點更新機制"
 }
