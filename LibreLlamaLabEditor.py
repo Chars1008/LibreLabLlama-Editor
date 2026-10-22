@@ -6,13 +6,14 @@ import re
 from typing import List, Literal, Optional, Dict, Tuple, Set, Any
 from pydantic import BaseModel, Field
 
-from PySide6.QtCore import Qt, QThread, QTimer, Signal, Slot, QPoint
+from PySide6.QtCore import Qt, QThread, QTimer, Signal, Slot, QPoint, QSize
 from PySide6.QtGui import QFont, QTextCursor, QPalette, QColor
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QSplitter, QTextEdit, QTextBrowser, QPushButton, QLabel, QComboBox,
     QScrollArea, QFrame, QMessageBox, QProgressBar, QMenu, QDialog,
-    QLineEdit, QFormLayout, QTabWidget, QStackedWidget, QGraphicsDropShadowEffect
+    QLineEdit, QFormLayout, QTabWidget, QStackedWidget, QGraphicsDropShadowEffect,
+    QSizePolicy
 )
 import subprocess
 import shutil
@@ -1767,6 +1768,30 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
 
         return prompt
 
+    @staticmethod
+    def is_degenerate_repetition(content: str) -> bool:
+        """
+        即時檢測模型是否陷入退化重複死迴圈 (Degenerate Repetition Loop)。
+        嚴格排除 JSON 標準縮排空白、換行與結構符號，僅鎖定真實的字詞重複或單字元死迴圈。
+        """
+        if len(content) < 120:
+            return False
+
+        # 1. 非空白單一字元重複超過 15 次 (排除空格、Tab、換行)
+        if re.search(r'([^ \t\r\n])\1{14,}$', content):
+            return True
+
+        # 2. 長度 4~80 字元的片語在尾端重複 4 次以上 (包含自身即連續 4 次)
+        # 且該片語必須包含至少 3 個英數字或中文字元，杜絕 JSON 縮排如 "        " (8 空格) 或 "}, {" 造成的誤判
+        m = re.search(r'([^\r\n]{4,80}?)\1{3,}$', content)
+        if m:
+            unit = m.group(1)
+            word_chars = re.findall(r'[a-zA-Z0-9\u4e00-\u9fff]', unit)
+            if len(word_chars) >= 3:
+                return True
+
+        return False
+
     def run(self):
         system_prompt = self.build_system_prompt()
         full_content = ""
@@ -1805,17 +1830,15 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
                             chunk_count += 1
                             self.chunk_received.emit(delta, chunk_count)
 
-                            # 即時檢測退化循環 (Degenerate Repetition Detection)
-                            # 支援 2~60 字元的長詞/句重複超過 3 次，或單一字元重複超過 10 次，提早截斷串流以防崩潰
-                            if len(full_content) > 80:
-                                if re.search(r'(.{2,60}?)\1{3,}$', full_content) or re.search(r'(.)\1{10,}$', full_content):
-                                    print("[ReviewWorker] Degenerate repetition loop detected in Ollama stream, breaking early to salvage JSON.")
-                                    salvaged_after_abort = True
-                                    break
+                            # 精確檢測退化循環：排除 JSON 縮排空格，僅在真正字詞重複時及時中斷
+                            if self.is_degenerate_repetition(full_content):
+                                print("[ReviewWorker] Degenerate repetition loop detected in Ollama stream, breaking early to salvage JSON.")
+                                salvaged_after_abort = True
+                                break
                 except Exception as stream_err:
                     err_msg = str(stream_err).lower()
                     # 捕捉 Ollama/llama.cpp 的 token repeat limit 或 status code -1 中斷
-                    if ("repeat limit" in err_msg or "prediction aborted" in err_msg or "status code: -1" in err_msg or "-1" in err_msg) and len(full_content) > 60:
+                    if ("repeat limit" in err_msg or "prediction aborted" in err_msg or "status code: -1" in err_msg) and len(full_content) > 60:
                         print(f"[ReviewWorker] Intercepted Ollama stream abort: {stream_err}. Salvaging {len(full_content)} chars.")
                         salvaged_after_abort = True
                     else:
@@ -1867,17 +1890,22 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
                                         chunk_count += 1
                                         self.chunk_received.emit(delta, chunk_count)
 
-                                        if len(full_content) > 80:
-                                            if re.search(r'(.{2,60}?)\1{3,}$', full_content) or re.search(r'(.)\1{10,}$', full_content):
-                                                print("[ReviewWorker] Degenerate repetition detected in API stream, breaking early.")
-                                                salvaged_after_abort = True
-                                                break
+                                        # 精確檢測退化循環 (API 串流)
+                                        if self.is_degenerate_repetition(full_content):
+                                            print("[ReviewWorker] Degenerate repetition detected in API stream, breaking early.")
+                                            salvaged_after_abort = True
+                                            break
                                 except Exception:
                                     continue
 
-            # 清除結尾退化重複文字（支援長達 60 字元的退化迴圈片語）
-            full_content = re.sub(r'(.{2,60}?)\1{3,}$', '', full_content)
-            full_content = re.sub(r'(.)\1{8,}$', '', full_content)
+            # 清除結尾退化重複文字（只在真正觸發退化時修剪，不破壞合法 JSON 尾括號）
+            if salvaged_after_abort:
+                full_content = re.sub(r'([^ \t\r\n])\1{10,}$', '', full_content)
+                m = re.search(r'([^\r\n]{4,80}?)\1{3,}$', full_content)
+                if m:
+                    unit = m.group(1)
+                    if len(re.findall(r'[a-zA-Z0-9\u4e00-\u9fff]', unit)) >= 3:
+                        full_content = full_content[:m.start()]
 
             raw_content = full_content.strip()
             if raw_content.startswith("```json"):
@@ -2741,6 +2769,194 @@ class CardCarouselWidget(QWidget):
             self.btn_last.setEnabled(self.current_idx < total - 1)
 
 
+class CollocationOptionButton(QPushButton):
+    """
+    自適應多行自動折行之搭配詞選項卡片 (Clickable Option Card)。
+    完整支援長句與段落自動換行、展示風格定位、套用狀態徽章、完整替換文字與學術推薦理念。
+    """
+    def __init__(self, option_idx: int, opt: RevisionOption, is_active: bool, is_dark: bool, is_en: bool, parent=None):
+        super().__init__(parent)
+        self.option_idx = option_idx
+        self.is_active = is_active
+        self.is_dark = is_dark
+        self.is_en = is_en
+        self.setCursor(Qt.PointingHandCursor)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(6)
+
+        # 頂部：選項代號 + 風格標籤 + 狀態徽章
+        header_row = QHBoxLayout()
+        header_row.setContentsMargins(0, 0, 0, 0)
+        header_row.setSpacing(8)
+
+        opt_letter = chr(65 + option_idx)
+        title_text = f"Option {opt_letter}: {opt.style_label}" if is_en else f"選項 {opt_letter}：{opt.style_label}"
+        self.title_lbl = QLabel(title_text)
+        self.title_lbl.setFont(QFont("Segoe UI", 9, QFont.Bold))
+        self.title_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        header_row.addWidget(self.title_lbl)
+        header_row.addStretch()
+
+        self.badge_lbl = QLabel()
+        self.badge_lbl.setFont(QFont("Segoe UI", 8, QFont.Bold))
+        self.badge_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        if is_active:
+            badge_text = "✓ Applied" if is_en else "✓ 目前套用中"
+            self.badge_lbl.setText(badge_text)
+            self.badge_lbl.setStyleSheet("""
+                background-color: #10b981; color: #ffffff;
+                border-radius: 4px; padding: 2px 8px;
+            """)
+        else:
+            badge_text = "Click to apply" if is_en else "點擊切換套用"
+            self.badge_lbl.setText(badge_text)
+            if is_dark:
+                self.badge_lbl.setStyleSheet("""
+                    background-color: #334155; color: #94a3b8;
+                    border-radius: 4px; padding: 2px 8px;
+                """)
+            else:
+                self.badge_lbl.setStyleSheet("""
+                    background-color: #e2e8f0; color: #64748b;
+                    border-radius: 4px; padding: 2px 8px;
+                """)
+        header_row.addWidget(self.badge_lbl)
+        layout.addLayout(header_row)
+
+        # 中間：完整修訂語句 (支援完整自動折行，絕不截斷)
+        self.revised_box = QFrame()
+        self.revised_box.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        rev_box_layout = QVBoxLayout(self.revised_box)
+        rev_box_layout.setContentsMargins(10, 8, 10, 8)
+
+        self.revised_lbl = QLabel(f"➔ {opt.revised_text}")
+        self.revised_lbl.setWordWrap(True)
+        self.revised_lbl.setFont(QFont("Segoe UI", 9, QFont.Medium))
+        self.revised_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        rev_box_layout.addWidget(self.revised_lbl)
+        layout.addWidget(self.revised_box)
+
+        # 底部：推薦理由 / 語感解析 (若有)
+        rationale = opt.rationale_en if is_en else (opt.rationale_zh or opt.rationale_en)
+        if rationale:
+            self.rationale_lbl = QLabel(f"💡 {'Rationale' if is_en else '修訂理念'}：{rationale}")
+            self.rationale_lbl.setWordWrap(True)
+            self.rationale_lbl.setFont(QFont("Segoe UI", 8))
+            self.rationale_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+            layout.addWidget(self.rationale_lbl)
+        else:
+            self.rationale_lbl = None
+
+        self.apply_theme(is_active, is_dark)
+
+    def apply_theme(self, is_active: bool, is_dark: bool):
+        if is_active:
+            if is_dark:
+                self.setStyleSheet("""
+                    QPushButton {
+                        background-color: #064e3b;
+                        border: 2px solid #10b981;
+                        border-radius: 8px;
+                        text-align: left;
+                    }
+                    QPushButton:hover {
+                        background-color: #047857;
+                        border-color: #34d399;
+                    }
+                """)
+                self.title_lbl.setStyleSheet("color: #34d399;")
+                self.revised_box.setStyleSheet("""
+                    QFrame {
+                        background-color: #022c22;
+                        border: 1px solid #059669;
+                        border-radius: 6px;
+                    }
+                """)
+                self.revised_lbl.setStyleSheet("color: #ecfdf5;")
+                if self.rationale_lbl:
+                    self.rationale_lbl.setStyleSheet("color: #a7f3d0;")
+            else:
+                self.setStyleSheet("""
+                    QPushButton {
+                        background-color: #f0fdf4;
+                        border: 2px solid #10b981;
+                        border-radius: 8px;
+                        text-align: left;
+                    }
+                    QPushButton:hover {
+                        background-color: #dcfce7;
+                        border-color: #059669;
+                    }
+                """)
+                self.title_lbl.setStyleSheet("color: #065f46;")
+                self.revised_box.setStyleSheet("""
+                    QFrame {
+                        background-color: #ffffff;
+                        border: 1px solid #86efac;
+                        border-radius: 6px;
+                    }
+                """)
+                self.revised_lbl.setStyleSheet("color: #047857;")
+                if self.rationale_lbl:
+                    self.rationale_lbl.setStyleSheet("color: #059669;")
+        else:
+            if is_dark:
+                self.setStyleSheet("""
+                    QPushButton {
+                        background-color: #0f172a;
+                        border: 1px solid #334155;
+                        border-radius: 8px;
+                        text-align: left;
+                    }
+                    QPushButton:hover {
+                        background-color: #1e293b;
+                        border-color: #10b981;
+                    }
+                """)
+                self.title_lbl.setStyleSheet("color: #94a3b8;")
+                self.revised_box.setStyleSheet("""
+                    QFrame {
+                        background-color: #1e293b;
+                        border: 1px dashed #475569;
+                        border-radius: 6px;
+                    }
+                """)
+                self.revised_lbl.setStyleSheet("color: #cbd5e1;")
+                if self.rationale_lbl:
+                    self.rationale_lbl.setStyleSheet("color: #64748b;")
+            else:
+                self.setStyleSheet("""
+                    QPushButton {
+                        background-color: #f8fafc;
+                        border: 1px solid #cbd5e1;
+                        border-radius: 8px;
+                        text-align: left;
+                    }
+                    QPushButton:hover {
+                        background-color: #f1f5f9;
+                        border-color: #10b981;
+                    }
+                """)
+                self.title_lbl.setStyleSheet("color: #334155;")
+                self.revised_box.setStyleSheet("""
+                    QFrame {
+                        background-color: #ffffff;
+                        border: 1px dashed #cbd5e1;
+                        border-radius: 6px;
+                    }
+                """)
+                self.revised_lbl.setStyleSheet("color: #1e293b;")
+                if self.rationale_lbl:
+                    self.rationale_lbl.setStyleSheet("color: #64748b;")
+
+    def sizeHint(self):
+        sh = self.layout().sizeHint()
+        return QSize(sh.width(), max(sh.height(), 70))
+
+
 class FloatingCollocationPopup(QFrame):
     """
     浮動搭配詞選項卡片 (Floating Collocation Suggestion Card):
@@ -2760,12 +2976,12 @@ class FloatingCollocationPopup(QFrame):
         self.init_ui()
 
     def init_ui(self):
-        self.setFixedWidth(460)
+        self.setFixedWidth(640)
         self.set_theme_mode(self.is_dark)
 
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 10, 12, 10)
-        layout.setSpacing(6)
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(14, 12, 14, 12)
+        main_layout.setSpacing(8)
 
         # 頂部列：標題 + 關閉按鈕
         top_bar = QHBoxLayout()
@@ -2777,26 +2993,48 @@ class FloatingCollocationPopup(QFrame):
         top_bar.addStretch()
 
         close_btn = QPushButton("✕")
-        close_btn.setFixedSize(22, 22)
-        close_btn.setFont(QFont("Segoe UI", 9, QFont.Bold))
-        close_btn.setStyleSheet("border: none; color: #94a3b8; background: transparent; font-size: 13px;")
+        close_btn.setFixedSize(24, 24)
+        close_btn.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        close_btn.setStyleSheet("border: none; color: #94a3b8; background: transparent; font-size: 14px;")
         close_btn.clicked.connect(self.hide)
         top_bar.addWidget(close_btn)
-        layout.addLayout(top_bar)
+        main_layout.addLayout(top_bar)
 
+        # 原文修訂目標詞（帶有背景框與完整自動折行）
+        self.orig_box = QFrame()
+        orig_layout = QVBoxLayout(self.orig_box)
+        orig_layout.setContentsMargins(10, 8, 10, 8)
         self.orig_lbl = QLabel()
         self.orig_lbl.setWordWrap(True)
         self.orig_lbl.setFont(QFont("Segoe UI", 9))
-        layout.addWidget(self.orig_lbl)
+        orig_layout.addWidget(self.orig_lbl)
+        main_layout.addWidget(self.orig_box)
 
+        # 審稿專家建言（帶有警告/引導背景框）
+        self.comment_box = QFrame()
+        comment_layout = QVBoxLayout(self.comment_box)
+        comment_layout.setContentsMargins(10, 8, 10, 8)
         self.comment_lbl = QLabel()
         self.comment_lbl.setWordWrap(True)
         self.comment_lbl.setFont(QFont("Segoe UI", 9))
-        layout.addWidget(self.comment_lbl)
+        comment_layout.addWidget(self.comment_lbl)
+        main_layout.addWidget(self.comment_box)
 
-        self.options_container = QVBoxLayout()
-        self.options_container.setSpacing(5)
-        layout.addLayout(self.options_container)
+        # 選項滾動區域 (保證長句與多選項不超出螢幕)
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFrameShape(QFrame.NoFrame)
+        self.scroll_area.setMaximumHeight(420)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+
+        self.options_widget = QWidget()
+        self.options_container = QVBoxLayout(self.options_widget)
+        self.options_container.setContentsMargins(0, 2, 4, 2)
+        self.options_container.setSpacing(8)
+        self.scroll_area.setWidget(self.options_widget)
+
+        main_layout.addWidget(self.scroll_area)
 
     def set_theme_mode(self, is_dark: bool):
         self.is_dark = is_dark
@@ -2806,9 +3044,40 @@ class FloatingCollocationPopup(QFrame):
             FloatingCollocationPopup {{
                 background-color: {bg};
                 border: 2px solid {border};
-                border-radius: 8px;
+                border-radius: 10px;
             }}
         """)
+        if hasattr(self, 'orig_box'):
+            if is_dark:
+                self.orig_box.setStyleSheet("""
+                    QFrame {
+                        background-color: #0f172a;
+                        border: 1px solid #334155;
+                        border-radius: 6px;
+                    }
+                """)
+                self.comment_box.setStyleSheet("""
+                    QFrame {
+                        background-color: #064e3b;
+                        border: 1px solid #059669;
+                        border-radius: 6px;
+                    }
+                """)
+            else:
+                self.orig_box.setStyleSheet("""
+                    QFrame {
+                        background-color: #f8fafc;
+                        border: 1px solid #cbd5e1;
+                        border-radius: 6px;
+                    }
+                """)
+                self.comment_box.setStyleSheet("""
+                    QFrame {
+                        background-color: #f0fdf4;
+                        border: 1px solid #86efac;
+                        border-radius: 6px;
+                    }
+                """)
 
     def set_issue(self, issue_idx: int, issue: IssueItem, selected_opt_idx: int = 0):
         self.current_issue_idx = issue_idx
@@ -2820,10 +3089,11 @@ class FloatingCollocationPopup(QFrame):
 
         comm = issue.reviewer_comment_en if is_en else (issue.reviewer_comment_zh or issue.reviewer_comment_en)
         if comm:
-            self.comment_lbl.setText(f"<b>💡 {'Reviewer Note' if is_en else '審稿建議'}：</b> <span style='color: #10b981;'>{html.escape(comm)}</span>")
-            self.comment_lbl.show()
+            comm_color = "#34d399" if self.is_dark else "#065f46"
+            self.comment_lbl.setText(f"<b>💡 {'Reviewer Note' if is_en else '審稿建議'}：</b> <span style='color: {comm_color};'>{html.escape(comm)}</span>")
+            self.comment_box.show()
         else:
-            self.comment_lbl.hide()
+            self.comment_box.hide()
 
         while self.options_container.count():
             item = self.options_container.takeAt(0)
@@ -2836,40 +3106,7 @@ class FloatingCollocationPopup(QFrame):
 
         for o_idx, opt in enumerate(issue.revision_options):
             is_active = (o_idx == selected_opt_idx)
-            btn = QPushButton()
-            btn.setCursor(Qt.PointingHandCursor)
-
-            label_text = f"Option {chr(65 + o_idx)}: {opt.style_label}" if is_en else f"選項 {chr(65 + o_idx)}：{opt.style_label}"
-            status_tag = (" [已套用 ✓]" if is_active else "") if not is_en else (" [Applied ✓]" if is_active else "")
-            btn.setText(f"{label_text}{status_tag}\n➔ \"{opt.revised_text}\"")
-            btn.setFont(QFont("Segoe UI", 9))
-
-            if is_active:
-                btn.setStyleSheet("""
-                    QPushButton {
-                        background-color: #15803d; color: #ffffff; border: 1px solid #166534;
-                        border-radius: 6px; padding: 6px 10px; text-align: left; font-weight: bold;
-                    }
-                    QPushButton:hover { background-color: #166534; }
-                """)
-            else:
-                if self.is_dark:
-                    btn.setStyleSheet("""
-                        QPushButton {
-                            background-color: #0f172a; color: #6ee7b7; border: 1px solid #059669;
-                            border-radius: 6px; padding: 6px 10px; text-align: left;
-                        }
-                        QPushButton:hover { background-color: #064e3b; color: #ffffff; border-color: #10b981; }
-                    """)
-                else:
-                    btn.setStyleSheet("""
-                        QPushButton {
-                            background-color: #f8fafc; color: #065f46; border: 1px solid #a7f3d0;
-                            border-radius: 6px; padding: 6px 10px; text-align: left;
-                        }
-                        QPushButton:hover { background-color: #d1fae5; border-color: #10b981; }
-                    """)
-
+            btn = CollocationOptionButton(o_idx, opt, is_active, self.is_dark, is_en)
             btn.clicked.connect(lambda chk=False, idx=o_idx: self.on_click_option(idx))
             self.option_buttons.append(btn)
             self.options_container.addWidget(btn)
@@ -4456,14 +4693,22 @@ class AcademicReviewerApp(QMainWindow):
         issue = self.current_report.issues[issue_idx]
         selected_opt = self.selected_options.get(issue_idx, 0)
         self.floating_colloc_popup.set_issue(issue_idx, issue, selected_opt)
+        self.floating_colloc_popup.adjustSize()
 
         screen = QApplication.primaryScreen().availableGeometry()
+        popup_w = self.floating_colloc_popup.width()
+        popup_h = self.floating_colloc_popup.height()
         x = pos.x()
-        y = pos.y() + 12
-        if x + self.floating_colloc_popup.width() > screen.right() - 10:
-            x = screen.right() - self.floating_colloc_popup.width() - 15
-        if y + self.floating_colloc_popup.height() > screen.bottom() - 10:
-            y = max(pos.y() - self.floating_colloc_popup.height() - 15, 10)
+        y = pos.y() + 14
+
+        # 左右邊界保護：避免卡片超出螢幕右側或左側
+        if x + popup_w > screen.right() - 15:
+            x = screen.right() - popup_w - 20
+        x = max(screen.left() + 15, x)
+
+        # 上下邊界保護：若游標下方空間不足以容納卡片高度，自動翻轉彈出至游標上方
+        if y + popup_h > screen.bottom() - 20:
+            y = max(pos.y() - popup_h - 15, screen.top() + 20)
 
         self.floating_colloc_popup.move(x, y)
         self.floating_colloc_popup.show()
