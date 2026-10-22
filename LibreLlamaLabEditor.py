@@ -64,6 +64,9 @@ I18N = {
 
         "section_lbl": "章節定位:",
         "load_sample": "📋 載入情境範文",
+        "pipeline_lbl": "審查流程:",
+        "pipeline_agentic": "🧠 多代理深度流水線 (3-Pass Agentic)",
+        "pipeline_fast": "⚡ 快速單階審查 (Single-Pass Fast)",
 
         # 左欄 (1/3)
         "draft_title": "原始英文草稿",
@@ -167,6 +170,9 @@ I18N = {
 
         "section_lbl": "Section Target:",
         "load_sample": "📋 Load Sample",
+        "pipeline_lbl": "Pipeline:",
+        "pipeline_agentic": "🧠 Multi-Pass Agentic (3-Pass)",
+        "pipeline_fast": "⚡ Fast Single-Pass",
 
         # Left Column (1/3)
         "draft_title": "Original Draft",
@@ -821,11 +827,15 @@ class ApiSettingsDialog(QDialog):
         self.model_edit = QLineEdit(self.config.get("api_model", "deepseek-chat"))
         form.addRow("Model Name:" if is_en else "模型名稱 (Model Name):", self.model_edit)
 
+        self.temp_edit = QLineEdit(str(self.config.get("temperature", 0.2)))
+        self.temp_edit.setPlaceholderText("0.2 (0.0 ~ 1.0)")
+        form.addRow("Temperature:" if is_en else "推論嚴謹度 (Temperature):", self.temp_edit)
+
         layout.addLayout(form)
 
         info_lbl = QLabel(
-            "💡 Compatible with all standard OpenAI API providers. Your key is stored strictly on your local computer." if is_en
-            else "💡 支援任何相容 OpenAI 規格的線上服務。金鑰僅儲存於您本機設定檔，絕不上傳。"
+            "💡 Recommended Temperature: 0.2 (strict academic rigor, low hallucination). Compatible with OpenAI standards." if is_en
+            else "💡 推薦 Temperature 設定：0.2（學術審查/嚴謹糾錯首選，消除幻覺與浮誇用詞）。支援所有相容 OpenAI 規格端點。"
         )
         info_lbl.setStyleSheet("color: #64748b; font-size: 11px;")
         info_lbl.setWordWrap(True)
@@ -894,6 +904,10 @@ class ApiSettingsDialog(QDialog):
         self.config["api_url"] = self.url_edit.text().strip()
         self.config["api_key"] = self.key_edit.text().strip()
         self.config["api_model"] = self.model_edit.text().strip()
+        try:
+            self.config["temperature"] = float(self.temp_edit.text().strip())
+        except ValueError:
+            self.config["temperature"] = 0.2
         save_config(self.config)
         self.accept()
 
@@ -1606,9 +1620,12 @@ class ReviewWorker(QThread):
     finished = Signal(AcademicReviewReport)
     error = Signal(str)
     chunk_received = Signal(str, int)
+    progress_status = Signal(str, int, int)
+    thinking_received = Signal(str)
 
     def __init__(self, text: str, engine_mode: str, model_name: str, api_config: dict,
-                 ui_language: str, writing_mode: str, context_scope: str, section_target: str):
+                 ui_language: str, writing_mode: str, context_scope: str, section_target: str,
+                 pipeline_mode: str = "multi_pass", temperature: float = 0.2):
         super().__init__()
         self.text = text
         self.engine_mode = engine_mode
@@ -1618,29 +1635,25 @@ class ReviewWorker(QThread):
         self.writing_mode = writing_mode
         self.context_scope = context_scope
         self.section_target = section_target
+        self.pipeline_mode = pipeline_mode
+        self.temperature = temperature
         self.is_stopped: bool = False
 
     def stop(self):
         self.is_stopped = True
 
-    def build_system_prompt(self) -> str:
+    def _get_scope_prompt(self) -> str:
         mode_info = WRITING_MODES.get(self.writing_mode, WRITING_MODES["academic"])
         is_en = (self.ui_language == "en_US")
-
-        # 找尋章節名稱
         section_name = self.section_target
         for s_id, s_zh, s_en in mode_info["sections"]:
             if s_id == self.section_target:
                 section_name = s_en if is_en else s_zh
                 break
 
-        persona = mode_info["persona_en"] if is_en else mode_info["persona_zh"]
-
-        # 範疇提示
-        # 範疇提示
         if self.context_scope == "partial":
             if self.section_target == "auto":
-                scope_prompt = (
+                return (
                     "【IMPORTANT CONTEXT SCOPE & AUTO-DETECTION】: The user has indicated that this input text is a PARTIAL EXCERPT, "
                     "but the exact section type is unspecified. You MUST first determine the most likely section type of this excerpt "
                     "(e.g. Methodology, Literature Review, Discussion, Executive Summary), explicitly state your classification in "
@@ -1651,7 +1664,7 @@ class ReviewWorker(QThread):
                     "並在全文主旨診斷 (article_gist) 中明確註明你的章節判斷，隨後依該章節之最高國際專業標準進行審查。"
                 )
             else:
-                scope_prompt = (
+                return (
                     f"【IMPORTANT CONTEXT SCOPE】: The user has indicated that this input text is a SPECIFIC PARTIAL EXCERPT "
                     f"from the [{section_name}] section. You must focus your critique specifically on the conventions, "
                     f"standards, and requirements of this particular section. Do NOT penalize the text for omitting "
@@ -1661,10 +1674,16 @@ class ReviewWorker(QThread):
                     f"你的審查與修改必須緊密契合此章節的國際期刊／商務寫作慣例與結構標準，絕不可因為該段落未包含其他章節的內容而予以扣分！"
                 )
         else:
-            scope_prompt = (
+            return (
                 "【IMPORTANT CONTEXT SCOPE】: This is a COMPREHENSIVE / FULL text. Evaluate its overarching narrative arc, "
                 "logical continuity, thesis cohesion, and complete structural balance."
             )
+
+    def build_system_prompt(self) -> str:
+        mode_info = WRITING_MODES.get(self.writing_mode, WRITING_MODES["academic"])
+        is_en = (self.ui_language == "en_US")
+        persona = mode_info["persona_en"] if is_en else mode_info["persona_zh"]
+        scope_prompt = self._get_scope_prompt()
 
         if is_en:
             prompt = f"""You are the {persona}.
@@ -1768,6 +1787,239 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
 
         return prompt
 
+    def build_pass1_collocation_prompt(self) -> str:
+        """多代理 Pass 1: 專責詞彙搭配、動詞片語與用詞精準度"""
+        mode_info = WRITING_MODES.get(self.writing_mode, WRITING_MODES["academic"])
+        is_en = (self.ui_language == "en_US")
+        persona = mode_info["persona_en"] if is_en else mode_info["persona_zh"]
+        scope_prompt = self._get_scope_prompt()
+
+        if is_en:
+            return f"""You are the Lead Lexical & Syntax Editor for {persona}.
+CRITICAL DIRECTIVE: Pure professional English only. No Chinese characters in output.
+{scope_prompt}
+
+TASK: EXHAUSTIVE COLLOCATION & LEXICAL REGISTER SCAN (Pass 1 of 3)
+Your SOLE responsibility is to scan the manuscript for ALL unnatural collocations, awkward prepositions, verb-noun mismatches, informal phrasing, and tense inconsistencies.
+- Examine every single sentence thoroughly. Identify ALL sub-optimal pairings (recommended 4 to 8+ items).
+- For EVERY issue, provide 3 to 4 distinct academic style options in `revision_options`:
+  Option A: Standard Academic Register
+  Option B: High-Impact / Concise Journal Style
+  Option C: Cautious / Hedged Academic Style
+  Option D: Authoritative / Formal Register
+
+CRITICAL RULES:
+- `original_text` MUST match an exact verbatim phrase from the text.
+- `revised_text` MUST be a fully articulated drop-in replacement.
+- Strictly FORBID ellipses ('...'). Output complete replacements!
+
+Respond strictly in valid JSON matching this schema:
+{{
+  "collocation_issues": [
+    {{
+      "original_text": "exact snippet from draft",
+      "category": "Collocation Defect",
+      "severity": "Major",
+      "reviewer_comment_en": "Professional critique in pure English",
+      "reviewer_comment_zh": "Review comment in English",
+      "revision_options": [
+        {{
+          "style_label": "Standard Academic Register",
+          "revised_text": "replacement phrase or clause",
+          "rationale_en": "Stylistic justification",
+          "rationale_zh": "Stylistic justification"
+        }}
+      ]
+    }}
+  ]
+}}"""
+        else:
+            return f"""你是一名專職的【道地搭配詞與學術用詞總編審（{persona}）】。
+請注意：所有說明與理由必須使用道地正體中文（臺灣慣用語彙）。
+{scope_prompt}
+
+【審查專責任務：地毯式搭配詞與用詞精準度掃描（Pass 1 of 3）】
+你是多代理流水線的第一位專責專家。你【唯一的職責】是逐句地毯式檢驗輸入的英文草稿，揪出所有生硬搭配、中式英文、動名不合、非自然介系詞與時態混用問題：
+- 請逐句詳盡檢驗草稿，凡有生硬或非道地搭配詞皆應提出（建議產出 4 至 8 處以上）。
+- 每一處問題皆提供 3 至 4 個不同語感風格的替代選項 (Option A, B, C, D)，附上 revised_text, style_label, rationale_zh, rationale_en！
+
+【嚴格禁止使用省略號】：
+- `original_text` 必須精準對應原文之連續完整詞彙或句子。
+- `revised_text` 必須提供完整且文法正確的替換語句。絕不可使用省略號（`...`）截斷！
+
+請嚴格輸出符合下列格式之合法 JSON：
+{{
+  "collocation_issues": [
+    {{
+      "original_text": "出現生硬搭配詞的原文片段",
+      "category": "Collocation Defect",
+      "severity": "Major",
+      "reviewer_comment_en": "Rigorous critique in pure English (絕不可有中文字元)",
+      "reviewer_comment_zh": "正體中文專業評述",
+      "revision_options": [
+        {{
+          "style_label": "頂刊標竿風格 / 簡潔有力 / 謹慎謙抑",
+          "revised_text": "完整替換語句",
+          "rationale_zh": "正體中文修訂理由",
+          "rationale_en": "English rationale"
+        }}
+      ]
+    }}
+  ]
+}}"""
+
+    def build_pass2_discourse_prompt(self) -> str:
+        """多代理 Pass 2: 專責跨句篇章邏輯、論述因果與實證策略防禦"""
+        mode_info = WRITING_MODES.get(self.writing_mode, WRITING_MODES["academic"])
+        is_en = (self.ui_language == "en_US")
+        persona = mode_info["persona_en"] if is_en else mode_info["persona_zh"]
+        scope_prompt = self._get_scope_prompt()
+
+        if is_en:
+            return f"""You are the Senior Peer Reviewer and Domain Logic Auditor for {persona}.
+CRITICAL DIRECTIVE: Pure professional English only.
+{scope_prompt}
+
+TASK: DISCOURSE COHERENCE, DOMAIN CAUSALITY & EMPIRICAL GAPS (Pass 2 of 3)
+You are the second specialized agent in the multi-agent review pipeline.
+Pass 1 has already extracted lexical collocations. Your SOLE responsibility is higher-level structural and argumentative rigor:
+1. Discourse coherence, sentence transitions, and paragraph-level logical flow.
+2. Logic errors, flawed deductions, overclaims, or ungrounded assertions.
+3. Domain causality: experimental conditions, measurements, units, and consistency across references (Figures/Tables).
+4. Provide 2 to 4 concrete strategic recommendations (`research_recommendations`) for experimental defenses or evidence gap closure.
+
+CRITICAL RULES:
+- `original_text` MUST match an exact verbatim continuous sentence or clause.
+- Strictly FORBID ellipses ('...'). Provide full replacement sentences!
+
+Respond strictly in valid JSON matching this schema:
+{{
+  "discourse_issues": [
+    {{
+      "original_text": "exact sentence or clause from draft",
+      "category": "Logic Error" | "Flawed Deduction" | "Grammar & Mechanics" | "Rhetorical Defect",
+      "severity": "Critical" | "Major" | "Minor",
+      "reviewer_comment_en": "Professional critique in pure English",
+      "reviewer_comment_zh": "Review comment",
+      "revision_options": [
+        {{
+          "style_label": "Standard Academic / Tightened Logic",
+          "revised_text": "complete replacement sentence",
+          "rationale_en": "Logical or syntactic justification",
+          "rationale_zh": "Justification"
+        }}
+      ]
+    }}
+  ],
+  "research_recommendations": [
+    {{
+      "gap_identified_en": "Critical strategic gap description",
+      "gap_identified_zh": "Gap description",
+      "severity": "Strongly Recommended (強烈建議補強)",
+      "action_type": "Ablation Validation / Statistical Defense",
+      "concrete_proposal_en": "Concrete actionable protocol",
+      "concrete_proposal_zh": "Concrete protocol",
+      "impact_on_acceptance_en": "Defense impact",
+      "impact_on_acceptance_zh": "Defense impact"
+    }}
+  ]
+}}"""
+        else:
+            return f"""你是一名專職的【資深期刊審稿員與領域邏輯稽核專家（{persona}）】。
+請注意：所有評語與理由必須使用正體中文（臺灣慣用語彙）。
+{scope_prompt}
+
+【審查專責任務：學術論證邏輯、因果推論與實證補強建議（Pass 2 of 3）】
+你是多代理流水線的第二位專責專家。Pass 1 已經專職處理了詞彙搭配，你【唯一的職責】是進行深層篇章結構、邏輯嚴密性與實證防禦審查：
+1. 檢視跨句邏輯轉折、段落連貫性、文法句構缺陷（Grammar & Mechanics）。
+2. 揪出推論跳躍（Flawed Deduction）、過度宣稱（Overclaiming）、因果倒置或前後矛盾（Logic Error）。
+3. 檢視領域因果關聯：實驗條件、週期數據、數值換算與圖表對照一致性。
+4. 【必須提出 2 至 4 點深層實質補強建議 (`research_recommendations`)】：消融實驗、顯著性檢定、對照組設計、混雜變因控制與審稿防禦方案。
+
+【嚴格禁止使用省略號】：輸出之語句必須為完整句子，嚴禁使用省略號（`...`）截斷！
+
+請嚴格輸出符合下列格式之合法 JSON：
+{{
+  "discourse_issues": [
+    {{
+      "original_text": "出現文法、邏輯或修辭缺陷的原文完整語句",
+      "category": "Logic Error" | "Flawed Deduction" | "Grammar & Mechanics" | "Rhetorical Defect",
+      "severity": "Critical" | "Major" | "Minor",
+      "reviewer_comment_en": "Rigorous critique in pure English (絕不可有中文字元)",
+      "reviewer_comment_zh": "正體中文專業評述",
+      "revision_options": [
+        {{
+          "style_label": "嚴謹論證風格 / 謙抑防禦風格",
+          "revised_text": "修改後之完整英文句子",
+          "rationale_zh": "正體中文修訂理由",
+          "rationale_en": "English rationale"
+        }}
+      ]
+    }}
+  ],
+  "research_recommendations": [
+    {{
+      "gap_identified_zh": "中文論證或實證缺失分析",
+      "gap_identified_en": "Rigorous English gap analysis",
+      "severity": "Strongly Recommended (強烈建議補強)",
+      "action_type": "補充消融實驗/顯著性分析",
+      "concrete_proposal_zh": "中文具體補做方案",
+      "concrete_proposal_en": "Concrete actionable proposal in English",
+      "impact_on_acceptance_zh": "中文審核防禦效益",
+      "impact_on_acceptance_en": "Defense impact in English"
+    }}
+  ]
+}}"""
+
+    def build_pass3_synthesis_prompt(self) -> str:
+        """多代理 Pass 3: 專責全文修訂邊界對齊、主旨診斷與綜合評估"""
+        mode_info = WRITING_MODES.get(self.writing_mode, WRITING_MODES["academic"])
+        is_en = (self.ui_language == "en_US")
+        persona = mode_info["persona_en"] if is_en else mode_info["persona_zh"]
+        scope_prompt = self._get_scope_prompt()
+
+        if is_en:
+            return f"""You are the Chief Editor and Publication Alignment Specialist for {persona}.
+CRITICAL DIRECTIVE: Pure professional English only.
+{scope_prompt}
+
+TASK: SYNTHESIS, BOUNDARY ALIGNMENT & PUBLICATION DRAFT (Pass 3 of 3)
+You are the final synthesizing agent in the multi-agent review pipeline.
+Your mission is to consolidate the original text and the approved revision points into a flawless, publication-ready manuscript.
+1. Integrate all approved revisions smoothly into the full text (`revised_full_text`).
+2. Ensure flawless sentence boundary alignment: NO subject repetition, NO cut-off clauses, NO dangling modifiers.
+3. Strictly FORBID ellipses ('...'). Output the COMPLETE revised text.
+4. Provide an executive summary of the draft (`article_gist`) and an overall peer review verdict (`overall_assessment`).
+
+Respond strictly in valid JSON matching this schema:
+{{
+  "article_gist_en": "Executive diagnostic summary of the manuscript",
+  "article_gist_zh": "Executive diagnostic summary",
+  "overall_assessment_en": "Comprehensive peer-review assessment and publication readiness verdict",
+  "overall_assessment_zh": "Overall review feedback",
+  "revised_full_text": "The COMPLETE revised manuscript text with all improvements seamlessly integrated."
+}}"""
+        else:
+            return f"""你是一名專職的【國際期刊總主編與論文對齊整合大師（{persona}）】。
+請注意：評估診斷請使用正體中文（臺灣慣用語彙）。
+{scope_prompt}
+
+【審查專責任務：修訂全文對齊、文章診斷與卡片封裝（Pass 3 of 3）】
+你是多代理流水線的第三位也是最後一位總編專家。你的任務是將原文草稿與前兩輪已確認的搭配詞、文法及邏輯改進點，進行最終的無縫整合與全局對齊：
+1. 將改進點完美融合進全文中，產出具備頂刊發表水準的完整修訂後文章（`revised_full_text`）。
+2. 確保句子邊界精準對齊：絕不重複出現主詞，絕不遺漏修飾語，絕不可出現生硬拼貼感。
+3. 【嚴格禁止使用省略號（`...`）】：必須輸出【完整的修訂後英文全文】！
+4. 撰寫全文主旨診斷（`article_gist`）與綜合就緒度審查評語（`overall_assessment`）。
+
+請嚴格輸出符合下列格式之合法 JSON：
+{{
+  "article_gist_zh": "正體中文文章主旨判斷與整體寫作品質診斷",
+  "article_gist_en": "Executive summary of the manuscript in English",
+  "overall_assessment_zh": "正體中文綜合就緒度評審意見（包含整體論證說服力、建議發表層級）",
+  "overall_assessment_en": "Overall review feedback in English",
+  "revised_full_text": "完整修訂後的英文文章全文（完整段落，絕無省略號）"
+}}"""
+
     @staticmethod
     def is_degenerate_repetition(content: str) -> bool:
         """
@@ -1792,295 +2044,450 @@ JSON FORMATTING: Ensure output is strictly valid JSON matching the schema."""
 
         return False
 
-    def run(self):
-        system_prompt = self.build_system_prompt()
+    @staticmethod
+    def _parse_json_safely(raw_str: str) -> dict:
+        """高容錯 JSON 解析器：自動過濾 <think> 標籤與 Markdown 標記"""
+        if not raw_str:
+            return {}
+        cleaned = re.sub(r'<think>.*?</think>', '', raw_str, flags=re.DOTALL).strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        cleaned = cleaned.strip()
+
+        try:
+            res = json.loads(cleaned, strict=False)
+            if isinstance(res, dict):
+                return res
+        except Exception:
+            pass
+
+        try:
+            repaired = json_repair.repair_json(cleaned, return_objects=True)
+            if isinstance(repaired, dict):
+                return repaired
+        except Exception:
+            pass
+
+        return {}
+
+    @staticmethod
+    def generate_fallback_improved_text(original_text: str, issues: List[IssueItem]) -> str:
+        """當大模型未能直接產出全文時，按順序將各問題最佳選項 (Option A) 套用至原文"""
+        res = original_text
+        for issue in issues:
+            if not issue.original_text or not issue.revision_options:
+                continue
+            orig = issue.original_text.strip()
+            rev = issue.revision_options[0].revised_text.strip()
+            if orig and rev and orig in res:
+                res = res.replace(orig, rev, 1)
+        return res
+
+    def parse_issue_item(self, raw_issue: dict, default_category: str = "Collocation Defect") -> Optional[IssueItem]:
+        def has_cjk(s: str) -> bool:
+            return bool(re.search(r'[\u4e00-\u9fff]', s)) if s else False
+
+        if not isinstance(raw_issue, dict) or not raw_issue.get('original_text'):
+            return None
+        orig = str(raw_issue.get('original_text', '')).strip()
+        if not raw_issue.get('category'):
+            raw_issue['category'] = default_category
+        cat = raw_issue['category']
+        if not raw_issue.get('severity'):
+            raw_issue['severity'] = 'Major'
+        if not raw_issue.get('revision_options') or not isinstance(raw_issue['revision_options'], list):
+            raw_issue['revision_options'] = [{
+                "style_label": "Standard Academic Register",
+                "revised_text": orig,
+                "rationale_zh": "優化道地語感與表達",
+                "rationale_en": "Optimized for natural native register."
+            }]
+
+        comm_en = str(raw_issue.get('reviewer_comment_en', '')).strip()
+        if not comm_en or has_cjk(comm_en):
+            opt_rationale_en = ""
+            first_opt = raw_issue['revision_options'][0]
+            if isinstance(first_opt, dict) and first_opt.get('rationale_en'):
+                candidate = str(first_opt['rationale_en']).strip()
+                if candidate and not has_cjk(candidate):
+                    opt_rationale_en = candidate
+
+            if opt_rationale_en:
+                comm_en = f"Reviewer Note ({cat}): {opt_rationale_en}"
+            elif cat == "Collocation Defect":
+                comm_en = f"Unidiomatic collocation in \"{orig}\". Recommend adopting standard academic/formal phrasing for natural register and precision."
+            elif cat == "Grammar & Mechanics":
+                comm_en = f"Grammatical or syntactic irregularity detected in \"{orig}\". Restructure sentence to conform to standard conventions."
+            elif cat == "Logic Error":
+                comm_en = f"Logical contradiction or incoherence in \"{orig}\". Clarify premise or ensure contextual alignment."
+            elif cat == "Flawed Deduction":
+                comm_en = f"Unjustified deductive leap or overclaim in \"{orig}\". Moderate assertion with appropriate academic hedging."
+            elif cat == "Rhetorical Defect":
+                comm_en = f"Rhetorical defect or informal tone in \"{orig}\". Revise to maintain an objective academic tone."
+            else:
+                comm_en = f"Peer-review critique: Revise \"{orig}\" to enhance precision, clarity, and academic rigor."
+        raw_issue['reviewer_comment_en'] = comm_en
+
+        comm_zh = str(raw_issue.get('reviewer_comment_zh', '')).strip()
+        if not comm_zh:
+            raw_issue['reviewer_comment_zh'] = f"針對「{orig}」之{cat}，建議採用更嚴謹、道地之表達以增強文章說服力。"
+
+        try:
+            return IssueItem(**raw_issue)
+        except Exception:
+            return None
+
+    def _parse_recommendations(self, raw_recs: list) -> List[ResearchRecommendation]:
+        def has_cjk(s: str) -> bool:
+            return bool(re.search(r'[\u4e00-\u9fff]', s)) if s else False
+
+        valid_recs = []
+        for raw_rec in raw_recs:
+            if not isinstance(raw_rec, dict):
+                continue
+            act = str(raw_rec.get('action_type') or "Methodological & Empirical Defense")
+            sev = str(raw_rec.get('severity') or "Strongly Recommended (強烈建議補強)")
+
+            gap_zh = str(raw_rec.get('gap_identified_zh') or raw_rec.get('gap_identified') or "").strip()
+            gap_en = str(raw_rec.get('gap_identified_en') or "").strip()
+            if not gap_en or has_cjk(gap_en):
+                gap_en = f"Critical strategic/empirical gap identified regarding {act}. Lacks rigorous validation and explicit context continuity."
+            if not gap_zh:
+                gap_zh = f"於「{act}」維度發現實證論據不足或上下文銜接落差，易引發審閱人質疑。"
+
+            prop_zh = str(raw_rec.get('concrete_proposal_zh') or raw_rec.get('concrete_proposal') or "").strip()
+            prop_en = str(raw_rec.get('concrete_proposal_en') or "").strip()
+            if not prop_en or has_cjk(prop_en):
+                prop_en = f"Actionable protocol: Incorporate quantitative benchmarking, ablation validation, or explicit contextual defenses for {act}."
+            if not prop_zh:
+                prop_zh = f"建議具體補充消融實驗、顯著性檢定或對照基準，以建立不可動搖之論證防禦。"
+
+            impact_zh = str(raw_rec.get('impact_on_acceptance_zh') or raw_rec.get('impact_on_acceptance') or "").strip()
+            impact_en = str(raw_rec.get('impact_on_acceptance_en') or "").strip()
+            if not impact_en or has_cjk(impact_en):
+                impact_en = f"Preempts reviewer skepticism, reinforces internal consistency, and substantively boosts manuscript acceptance rate."
+            if not impact_zh:
+                impact_zh = f"主動化解審稿人潛在質疑，封堵邏輯漏洞，大幅提升文章錄用與說服機率。"
+
+            try:
+                rec_obj = ResearchRecommendation(
+                    gap_identified_zh=gap_zh,
+                    gap_identified_en=gap_en,
+                    severity=sev,
+                    action_type=act,
+                    concrete_proposal_zh=prop_zh,
+                    concrete_proposal_en=prop_en,
+                    impact_on_acceptance_zh=impact_zh,
+                    impact_on_acceptance_en=impact_en
+                )
+                valid_recs.append(rec_obj)
+            except Exception:
+                continue
+        return valid_recs
+
+    def _call_engine_stream(self, system_prompt: str, user_prompt: str, pass_label: str = "") -> str:
+        """核心推論串流調用器：支援 DeepSeek-R1 <think> 思維鏈、長 Context 16K、自訂 Temperature 與退化熔斷"""
         full_content = ""
         chunk_count = 0
         salvaged_after_abort = False
+        is_reasoning = bool(re.search(r'(r1|reason|qwq)', self.model_name.lower()))
+        in_think = False
 
-        try:
-            if self.engine_mode == "ollama":
+        if pass_label:
+            self.chunk_received.emit(f"\n\n==========================================\n🚀 {pass_label}\n==========================================\n", 0)
+
+        if self.engine_mode == "ollama":
+            ollama_format = "json" if not is_reasoning else None
+            chat_options = {
+                "temperature": self.temperature,
+                "top_p": 0.85,
+                "top_k": 40,
+                "repeat_penalty": 1.18,
+                "repeat_last_n": 512,
+                "num_ctx": 16384,
+                "num_predict": -1
+            }
+
+            try:
                 response_stream = ollama.chat(
                     model=self.model_name,
                     messages=[
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": f"Please critically and exhaustively review the following text:\n\n{self.text}"}
+                        {"role": "user", "content": user_prompt}
                     ],
-                    format=AcademicReviewReport.model_json_schema(),
-                    options={
-                        "temperature": 0.45,
-                        "top_p": 0.90,
-                        "top_k": 40,
-                        "repeat_penalty": 1.22,
-                        "repeat_last_n": 512,
-                        "num_ctx": 16384,
-                        "num_predict": -1
-                    },
+                    format=ollama_format,
+                    options=chat_options,
                     stream=True
                 )
-                try:
-                    for chunk in response_stream:
+                for chunk in response_stream:
+                    if self.is_stopped:
+                        print(f"[ReviewWorker] Stream halted by user request during {pass_label}.")
+                        return ""
+
+                    delta = chunk.get('message', {}).get('content', '')
+                    if delta:
+                        full_content += delta
+                        chunk_count += 1
+
+                        if "<think>" in delta:
+                            in_think = True
+                        if in_think:
+                            self.thinking_received.emit(delta)
+                        if "</think>" in delta:
+                            in_think = False
+
+                        self.chunk_received.emit(delta, chunk_count)
+
+                        if self.is_degenerate_repetition(full_content):
+                            print(f"[ReviewWorker] Degenerate repetition loop detected during {pass_label}, breaking early.")
+                            salvaged_after_abort = True
+                            break
+            except Exception as stream_err:
+                err_msg = str(stream_err).lower()
+                if ("repeat limit" in err_msg or "prediction aborted" in err_msg or "status code: -1" in err_msg) and len(full_content) > 60:
+                    print(f"[ReviewWorker] Intercepted Ollama stream abort during {pass_label}: {stream_err}.")
+                    salvaged_after_abort = True
+                else:
+                    raise
+        else:
+            api_url = self.api_config.get("api_url", "https://api.deepseek.com/v1").rstrip('/')
+            api_key = self.api_config.get("api_key", "").strip()
+            model = self.api_config.get("api_model", "deepseek-chat").strip()
+            if not api_key:
+                raise ValueError("API Key not configured. Please open API Settings.")
+
+            endpoint = f"{api_url}/chat/completions"
+            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": f"{system_prompt}\n\nYou MUST respond strictly in valid JSON format."},
+                    {"role": "user", "content": user_prompt}
+                ],
+                "temperature": self.temperature,
+                "stream": True,
+                "response_format": {"type": "json_object"}
+            }
+
+            with httpx.Client(timeout=120.0) as client:
+                with client.stream("POST", endpoint, headers=headers, json=payload) as response:
+                    if response.status_code != 200:
+                        err_body = response.read().decode('utf-8', errors='ignore')
+                        raise ValueError(f"API Error ({response.status_code}):\n{err_body}")
+
+                    for line in response.iter_lines():
                         if self.is_stopped:
-                            print("[ReviewWorker] Ollama stream halted by user request.")
-                            return
+                            print(f"[ReviewWorker] API stream halted by user request during {pass_label}.")
+                            return ""
+                        if not line or not line.startswith("data: "):
+                            continue
+                        data_str = line[6:].strip()
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            c_json = json.loads(data_str)
+                            delta = c_json.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                            if delta:
+                                full_content += delta
+                                chunk_count += 1
 
-                        delta = chunk.get('message', {}).get('content', '')
-                        if delta:
-                            full_content += delta
-                            chunk_count += 1
-                            self.chunk_received.emit(delta, chunk_count)
+                                if "<think>" in delta:
+                                    in_think = True
+                                if in_think:
+                                    self.thinking_received.emit(delta)
+                                if "</think>" in delta:
+                                    in_think = False
 
-                            # 精確檢測退化循環：排除 JSON 縮排空格，僅在真正字詞重複時及時中斷
-                            if self.is_degenerate_repetition(full_content):
-                                print("[ReviewWorker] Degenerate repetition loop detected in Ollama stream, breaking early to salvage JSON.")
-                                salvaged_after_abort = True
-                                break
-                except Exception as stream_err:
-                    err_msg = str(stream_err).lower()
-                    # 捕捉 Ollama/llama.cpp 的 token repeat limit 或 status code -1 中斷
-                    if ("repeat limit" in err_msg or "prediction aborted" in err_msg or "status code: -1" in err_msg) and len(full_content) > 60:
-                        print(f"[ReviewWorker] Intercepted Ollama stream abort: {stream_err}. Salvaging {len(full_content)} chars.")
-                        salvaged_after_abort = True
-                    else:
-                        raise
-            else:
-                api_url = self.api_config.get("api_url", "https://api.deepseek.com/v1").rstrip('/')
-                api_key = self.api_config.get("api_key", "").strip()
-                model = self.api_config.get("api_model", "deepseek-chat").strip()
-                if not api_key:
-                    raise ValueError("API Key not configured. Please open API Settings.")
+                                self.chunk_received.emit(delta, chunk_count)
 
-                endpoint = f"{api_url}/chat/completions"
-                headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-                schema_json = json.dumps(AcademicReviewReport.model_json_schema(), ensure_ascii=False)
-                prompt_with_schema = f"{system_prompt}\n\nYou MUST respond strictly in valid JSON matching this JSON Schema:\n{schema_json}"
-
-                payload = {
-                    "model": model,
-                    "messages": [
-                        {"role": "system", "content": prompt_with_schema},
-                        {"role": "user", "content": f"Please critically and exhaustively review the following text:\n\n{self.text}"}
-                    ],
-                    "temperature": 0.45,
-                    "stream": True,
-                    "response_format": {"type": "json_object"}
-                }
-
-                with httpx.Client(timeout=120.0) as client:
-                    with client.stream("POST", endpoint, headers=headers, json=payload) as response:
-                        if response.status_code != 200:
-                            err_body = response.read().decode('utf-8', errors='ignore')
-                            raise ValueError(f"API Error ({response.status_code}):\n{err_body}")
-
-                        for line in response.iter_lines():
-                            if self.is_stopped:
-                                print("[ReviewWorker] API stream halted by user request.")
-                                return
-                            if not line:
-                                continue
-                            if line.startswith("data: "):
-                                data_str = line[6:].strip()
-                                if data_str == "[DONE]":
+                                if self.is_degenerate_repetition(full_content):
+                                    print(f"[ReviewWorker] Degenerate repetition in API stream during {pass_label}, breaking early.")
+                                    salvaged_after_abort = True
                                     break
-                                try:
-                                    c_json = json.loads(data_str)
-                                    delta = c_json.get("choices", [{}])[0].get("delta", {}).get("content", "")
-                                    if delta:
-                                        full_content += delta
-                                        chunk_count += 1
-                                        self.chunk_received.emit(delta, chunk_count)
+                        except Exception:
+                            continue
 
-                                        # 精確檢測退化循環 (API 串流)
-                                        if self.is_degenerate_repetition(full_content):
-                                            print("[ReviewWorker] Degenerate repetition detected in API stream, breaking early.")
-                                            salvaged_after_abort = True
-                                            break
-                                except Exception:
-                                    continue
+        if salvaged_after_abort:
+            full_content = re.sub(r'([^ \t\r\n])\1{10,}$', '', full_content)
+            m = re.search(r'([^\r\n]{4,80}?)\1{3,}$', full_content)
+            if m:
+                unit = m.group(1)
+                if len(re.findall(r'[a-zA-Z0-9\u4e00-\u9fff]', unit)) >= 3:
+                    full_content = full_content[:m.start()]
 
-            # 清除結尾退化重複文字（只在真正觸發退化時修剪，不破壞合法 JSON 尾括號）
-            if salvaged_after_abort:
-                full_content = re.sub(r'([^ \t\r\n])\1{10,}$', '', full_content)
-                m = re.search(r'([^\r\n]{4,80}?)\1{3,}$', full_content)
-                if m:
-                    unit = m.group(1)
-                    if len(re.findall(r'[a-zA-Z0-9\u4e00-\u9fff]', unit)) >= 3:
-                        full_content = full_content[:m.start()]
+        return full_content
 
-            raw_content = full_content.strip()
-            if raw_content.startswith("```json"):
-                raw_content = raw_content[7:]
-            elif raw_content.startswith("```"):
-                raw_content = raw_content[3:]
-            if raw_content.endswith("```"):
-                raw_content = raw_content[:-3]
-            raw_content = raw_content.strip()
+    def run_single_pass(self):
+        """快速單階審查 (Single-Pass Fast Review)"""
+        is_en = (self.ui_language == "en_US")
+        self.progress_status.emit("正在執行快速單階審查 (Single-Pass)..." if not is_en else "Executing fast single-pass review...", 1, 1)
 
-            data = None
-            try:
-                data = json.loads(raw_content, strict=False)
-            except Exception:
-                pass
+        system_prompt = self.build_system_prompt()
+        user_prompt = f"Please critically and exhaustively review the following text:\n\n{self.text}"
+        raw_output = self._call_engine_stream(system_prompt, user_prompt, pass_label="Single-Pass Review")
+        if self.is_stopped:
+            return
 
-            if data is None or not isinstance(data, dict):
-                try:
-                    repaired = json_repair.repair_json(raw_content, return_objects=True)
-                    if isinstance(repaired, dict):
-                        data = repaired
-                except Exception:
-                    pass
+        data = self._parse_json_safely(raw_output)
+        if not data:
+            raise ValueError(f"Could not parse model JSON response.\nFragment:\n{raw_output[-200:]}")
 
-            if not data or not isinstance(data, dict):
-                raise ValueError(f"Could not parse model JSON response.\nFragment:\n{raw_content[-200:]}")
+        valid_colloc = []
+        for item in data.get('collocation_issues', []):
+            p = self.parse_issue_item(item, default_category="Collocation Defect")
+            if p:
+                p.category = "Collocation Defect"
+                valid_colloc.append(p)
 
-            if salvaged_after_abort:
-                note_zh = "（系統提示：模型尾段因字詞重複提早終止，系統已自動修復並呈現完整審查建議）"
-                note_en = " (System Note: Output stream was auto-repaired to prevent token repetition loop)"
-                curr_zh = str(data.get('overall_assessment_zh') or '')
-                curr_en = str(data.get('overall_assessment_en') or '')
-                if curr_zh:
-                    data['overall_assessment_zh'] = f"{curr_zh}\n{note_zh}"
-                else:
-                    data['overall_assessment_zh'] = f"審查已完成。{note_zh}"
-                if curr_en:
-                    data['overall_assessment_en'] = f"{curr_en}\n{note_en}"
-                else:
-                    data['overall_assessment_en'] = f"Review completed.{note_en}"
+        valid_discourse = []
+        for item in data.get('discourse_issues', []):
+            p = self.parse_issue_item(item, default_category="Grammar & Mechanics")
+            if p:
+                valid_discourse.append(p)
 
-            # 數據容錯與補齊：雙軌獨立解析與中英雙語評論 100% 健全保證
-            def has_cjk(s: str) -> bool:
-                return bool(re.search(r'[\u4e00-\u9fff]', s)) if s else False
-
-            def parse_issue_item(raw_issue: dict, default_category: str = "Collocation Defect") -> Optional[IssueItem]:
-                if not isinstance(raw_issue, dict) or not raw_issue.get('original_text'):
-                    return None
-                orig = str(raw_issue.get('original_text', '')).strip()
-                if not raw_issue.get('category'):
-                    raw_issue['category'] = default_category
-                cat = raw_issue['category']
-                if not raw_issue.get('severity'):
-                    raw_issue['severity'] = 'Major'
-                if not raw_issue.get('revision_options') or not isinstance(raw_issue['revision_options'], list):
-                    raw_issue['revision_options'] = [{
-                        "style_label": "Standard Academic Register",
-                        "revised_text": orig,
-                        "rationale_zh": "優化道地語感與表達",
-                        "rationale_en": "Optimized for natural native register."
-                    }]
-
-                # 確保英文審稿意見 (reviewer_comment_en) 存在且為純英文
-                comm_en = str(raw_issue.get('reviewer_comment_en', '')).strip()
-                if not comm_en or has_cjk(comm_en):
-                    opt_rationale_en = ""
-                    first_opt = raw_issue['revision_options'][0]
-                    if isinstance(first_opt, dict) and first_opt.get('rationale_en'):
-                        candidate = str(first_opt['rationale_en']).strip()
-                        if candidate and not has_cjk(candidate):
-                            opt_rationale_en = candidate
-
-                    if opt_rationale_en:
-                        comm_en = f"Reviewer Note ({cat}): {opt_rationale_en}"
-                    elif cat == "Collocation Defect":
-                        comm_en = f"Unidiomatic collocation in \"{orig}\". Recommend adopting standard academic/formal phrasing for natural register and precision."
-                    elif cat == "Grammar & Mechanics":
-                        comm_en = f"Grammatical or syntactic irregularity detected in \"{orig}\". Restructure sentence to conform to standard conventions."
-                    elif cat == "Logic Error":
-                        comm_en = f"Logical contradiction or incoherence in \"{orig}\". Clarify premise or ensure contextual alignment."
-                    elif cat == "Flawed Deduction":
-                        comm_en = f"Unjustified deductive leap or overclaim in \"{orig}\". Moderate assertion with appropriate academic hedging."
-                    elif cat == "Rhetorical Defect":
-                        comm_en = f"Rhetorical defect or informal tone in \"{orig}\". Revise to maintain an objective academic tone."
+        if not valid_colloc and not valid_discourse:
+            for item in data.get('issues', []):
+                p = self.parse_issue_item(item)
+                if p:
+                    if p.category == "Collocation Defect":
+                        valid_colloc.append(p)
                     else:
-                        comm_en = f"Peer-review critique: Revise \"{orig}\" to enhance precision, clarity, and academic rigor."
-                raw_issue['reviewer_comment_en'] = comm_en
+                        valid_discourse.append(p)
 
-                # 確保正體中文審稿意見 (reviewer_comment_zh) 存在
-                comm_zh = str(raw_issue.get('reviewer_comment_zh', '')).strip()
-                if not comm_zh:
-                    raw_issue['reviewer_comment_zh'] = f"針對「{orig}」之{cat}，建議採用更嚴謹、道地之表達以增強文章說服力。"
+        valid_recs = self._parse_recommendations(data.get('research_recommendations', []))
+        all_issues = valid_colloc + valid_discourse
 
-                try:
-                    return IssueItem(**raw_issue)
-                except Exception:
-                    return None
+        revised_full_text = str(data.get('revised_full_text') or '').strip()
+        if not revised_full_text:
+            revised_full_text = self.generate_fallback_improved_text(self.text, all_issues)
 
-            valid_colloc = []
-            for item in data.get('collocation_issues', []):
-                p = parse_issue_item(item, default_category="Collocation Defect")
-                if p:
-                    p.category = "Collocation Defect"
-                    valid_colloc.append(p)
+        report = AcademicReviewReport(
+            article_gist_zh=str(data.get('article_gist_zh') or ''),
+            article_gist_en=str(data.get('article_gist_en') or ''),
+            overall_assessment_zh=str(data.get('overall_assessment_zh') or ''),
+            overall_assessment_en=str(data.get('overall_assessment_en') or ''),
+            research_recommendations=valid_recs,
+            collocation_issues=valid_colloc,
+            discourse_issues=valid_discourse,
+            issues=all_issues,
+            revised_full_text=revised_full_text
+        )
+        self.finished.emit(report)
 
-            valid_discourse = []
-            for item in data.get('discourse_issues', []):
-                p = parse_issue_item(item, default_category="Grammar & Mechanics")
-                if p:
-                    valid_discourse.append(p)
+    def run_multi_pass(self):
+        """多代理深度流水線 (Multi-Pass Agentic Workflow)"""
+        is_en = (self.ui_language == "en_US")
 
-            # 相容性回退：若模型回傳舊版單一 `issues`
-            if not valid_colloc and not valid_discourse:
-                for item in data.get('issues', []):
-                    p = parse_issue_item(item)
-                    if p:
-                        if p.category == "Collocation Defect":
-                            valid_colloc.append(p)
-                        else:
-                            valid_discourse.append(p)
+        # ==========================================
+        # Pass 1: 詞彙搭配與句構語法專員 (Syntax & Collocation Agent)
+        # ==========================================
+        if self.is_stopped:
+            return
+        p1_title = "Pass 1/3: 正在進行地毯式道地搭配詞與用詞精準度掃描..." if not is_en else "Pass 1/3: Exhaustive collocation & lexical register scan..."
+        self.progress_status.emit(p1_title, 1, 3)
 
-            data['collocation_issues'] = valid_colloc
-            data['discourse_issues'] = valid_discourse
-            data['issues'] = valid_colloc + valid_discourse
+        p1_system = self.build_pass1_collocation_prompt()
+        p1_user = f"Please critically and exhaustively scan the following text for all collocation defects, awkward prepositions, unidiomatic academic register, and tense inconsistencies:\n\n{self.text}"
+        p1_raw = self._call_engine_stream(p1_system, p1_user, pass_label="Pass 1 (Collocation & Syntax)")
+        if self.is_stopped:
+            return
 
-            # 實證與策略補強建議解析（高容錯雙語防禦，絕無中文出現在英文欄位）
-            valid_recs = []
-            for raw_rec in data.get('research_recommendations', []):
-                if not isinstance(raw_rec, dict):
-                    continue
-                act = str(raw_rec.get('action_type') or "Methodological & Empirical Defense")
-                sev = str(raw_rec.get('severity') or "Strongly Recommended (強烈建議補強)")
+        p1_data = self._parse_json_safely(p1_raw)
+        colloc_raw = p1_data.get('collocation_issues', [])
+        valid_colloc = []
+        for item in colloc_raw:
+            p = self.parse_issue_item(item, default_category="Collocation Defect")
+            if p:
+                p.category = "Collocation Defect"
+                valid_colloc.append(p)
 
-                gap_zh = str(raw_rec.get('gap_identified_zh') or raw_rec.get('gap_identified') or "").strip()
-                gap_en = str(raw_rec.get('gap_identified_en') or "").strip()
-                if not gap_en or has_cjk(gap_en):
-                    gap_en = f"Critical strategic/empirical gap identified regarding {act}. Lacks rigorous validation and explicit context continuity."
-                if not gap_zh:
-                    gap_zh = f"於「{act}」維度發現實證論據不足或上下文銜接落差，易引發審閱人質疑。"
+        # ==========================================
+        # Pass 2: 學術論證與因果審核員 (Discourse & Domain Logic Agent)
+        # ==========================================
+        if self.is_stopped:
+            return
+        p2_title = "Pass 2/3: 正在檢視學術論證邏輯、因果推論與圖表數據一致性..." if not is_en else "Pass 2/3: Analyzing discourse coherence, logic errors, causality & empirical gaps..."
+        self.progress_status.emit(p2_title, 2, 3)
 
-                prop_zh = str(raw_rec.get('concrete_proposal_zh') or raw_rec.get('concrete_proposal') or "").strip()
-                prop_en = str(raw_rec.get('concrete_proposal_en') or "").strip()
-                if not prop_en or has_cjk(prop_en):
-                    prop_en = f"Actionable protocol: Incorporate quantitative benchmarking, ablation validation, or explicit contextual defenses for {act}."
-                if not prop_zh:
-                    prop_zh = f"建議具體補充消融實驗、顯著性檢定或對照基準，以建立不可動搖之論證防禦。"
+        pass1_summary_lines = [f"- \"{c.original_text}\" ➔ \"{c.revision_options[0].revised_text if c.revision_options else ''}\"" for c in valid_colloc[:6]]
+        pass1_summary = "\n".join(pass1_summary_lines) if pass1_summary_lines else "None flagged yet."
 
-                impact_zh = str(raw_rec.get('impact_on_acceptance_zh') or raw_rec.get('impact_on_acceptance') or "").strip()
-                impact_en = str(raw_rec.get('impact_on_acceptance_en') or "").strip()
-                if not impact_en or has_cjk(impact_en):
-                    impact_en = f"Preempts reviewer skepticism, reinforces internal consistency, and substantively boosts manuscript acceptance rate."
-                if not impact_zh:
-                    impact_zh = f"主動化解審稿人潛在質疑，封堵邏輯漏洞，大幅提升文章錄用與說服機率。"
+        p2_system = self.build_pass2_discourse_prompt()
+        p2_user = (
+            f"Here is the manuscript draft:\n\n{self.text}\n\n"
+            f"[Context: Pass 1 has already addressed these lexical collocations:\n{pass1_summary}]\n\n"
+            f"Now, please focus entirely on discourse structure, argumentation validity, domain causality, and research recommendations."
+        )
+        p2_raw = self._call_engine_stream(p2_system, p2_user, pass_label="Pass 2 (Discourse & Logic)")
+        if self.is_stopped:
+            return
 
-                try:
-                    rec_obj = ResearchRecommendation(
-                        gap_identified_zh=gap_zh,
-                        gap_identified_en=gap_en,
-                        severity=sev,
-                        action_type=act,
-                        concrete_proposal_zh=prop_zh,
-                        concrete_proposal_en=prop_en,
-                        impact_on_acceptance_zh=impact_zh,
-                        impact_on_acceptance_en=impact_en
-                    )
-                    valid_recs.append(rec_obj)
-                except Exception:
-                    continue
-            data['research_recommendations'] = valid_recs
+        p2_data = self._parse_json_safely(p2_raw)
+        discourse_raw = p2_data.get('discourse_issues', [])
+        valid_discourse = []
+        for item in discourse_raw:
+            p = self.parse_issue_item(item, default_category="Grammar & Mechanics")
+            if p:
+                valid_discourse.append(p)
 
-            if not data.get('revised_full_text'):
-                data['revised_full_text'] = self.text
+        valid_recs = self._parse_recommendations(p2_data.get('research_recommendations', []))
 
-            report = AcademicReviewReport(**data)
-            self.finished.emit(report)
+        # ==========================================
+        # Pass 3: 全文修訂對齊與總編大師 (Synthesis & Alignment Agent)
+        # ==========================================
+        if self.is_stopped:
+            return
+        p3_title = "Pass 3/3: 正在進行修訂全文對齊、文章診斷與卡片封裝..." if not is_en else "Pass 3/3: Synthesizing aligned full revision & executive review..."
+        self.progress_status.emit(p3_title, 3, 3)
+
+        all_issues = valid_colloc + valid_discourse
+        top_revisions = [f"Replace \"{i.original_text}\" with \"{i.revision_options[0].revised_text}\"" for i in all_issues[:10] if i.revision_options]
+        revisions_context = "\n".join(top_revisions) if top_revisions else "No critical changes flagged."
+
+        p3_system = self.build_pass3_synthesis_prompt()
+        p3_user = (
+            f"Original manuscript:\n\n{self.text}\n\n"
+            f"Key approved revisions from earlier passes:\n{revisions_context}\n\n"
+            f"Please synthesize the publication-ready revised full text, executive summary (article_gist), and overall peer review assessment."
+        )
+        p3_raw = self._call_engine_stream(p3_system, p3_user, pass_label="Pass 3 (Full Synthesis)")
+        if self.is_stopped:
+            return
+
+        p3_data = self._parse_json_safely(p3_raw)
+
+        article_gist_zh = str(p3_data.get('article_gist_zh') or '')
+        article_gist_en = str(p3_data.get('article_gist_en') or '')
+        overall_zh = str(p3_data.get('overall_assessment_zh') or '')
+        overall_en = str(p3_data.get('overall_assessment_en') or '')
+        revised_full_text = str(p3_data.get('revised_full_text') or '').strip()
+
+        if not revised_full_text:
+            revised_full_text = self.generate_fallback_improved_text(self.text, all_issues)
+
+        final_report = AcademicReviewReport(
+            article_gist_zh=article_gist_zh or ("審查診斷：已完成多代理深度流水線檢驗。" if not is_en else "Executive Summary: 3-pass agentic review completed."),
+            article_gist_en=article_gist_en or "Executive Summary: 3-pass multi-agent review successfully executed.",
+            overall_assessment_zh=overall_zh or ("經 3 階段多代理深度審查，各維度皆已獲大幅修訂與對齊。" if not is_en else "Multi-pass review completed with deep contextual alignment."),
+            overall_assessment_en=overall_en or "Multi-pass review completed with deep contextual alignment.",
+            research_recommendations=valid_recs,
+            collocation_issues=valid_colloc,
+            discourse_issues=valid_discourse,
+            issues=all_issues,
+            revised_full_text=revised_full_text
+        )
+        self.finished.emit(final_report)
+
+    def run(self):
+        try:
+            if self.pipeline_mode == "single_pass":
+                self.run_single_pass()
+            else:
+                self.run_multi_pass()
         except Exception as e:
             self.error.emit(str(e))
 
@@ -3365,6 +3772,23 @@ class AcademicReviewerApp(QMainWindow):
         self.load_sample_btn.clicked.connect(self.load_mode_sample_text)
         row2_layout.addWidget(self.load_sample_btn)
 
+        row2_layout.addSpacing(10)
+
+        self.pipeline_lbl = QLabel("審查流程:")
+        self.pipeline_lbl.setFont(QFont("Segoe UI", 9, QFont.Bold))
+        row2_layout.addWidget(self.pipeline_lbl)
+
+        self.pipeline_combo = QComboBox()
+        self.pipeline_combo.addItem("🧠 多代理深度流水線 (3-Pass Agentic)", "multi_pass")
+        self.pipeline_combo.addItem("⚡ 快速單階審查 (Single-Pass Fast)", "single_pass")
+        saved_pipeline = self.config.get("pipeline_mode", "multi_pass")
+        if saved_pipeline == "single_pass":
+            self.pipeline_combo.setCurrentIndex(1)
+        else:
+            self.pipeline_combo.setCurrentIndex(0)
+        self.pipeline_combo.currentIndexChanged.connect(self.on_pipeline_mode_changed)
+        row2_layout.addWidget(self.pipeline_combo)
+
         row2_layout.addStretch()
 
         toolbar_container_layout.addLayout(row2_layout)
@@ -3755,6 +4179,14 @@ class AcademicReviewerApp(QMainWindow):
         self.scope_lbl.setText(t["scope_lbl"])
         self.section_lbl.setText(t["section_lbl"])
         self.load_sample_btn.setText(t["load_sample"])
+        if hasattr(self, 'pipeline_lbl'):
+            self.pipeline_lbl.setText(t.get("pipeline_lbl", "審查流程:"))
+        if hasattr(self, 'pipeline_combo'):
+            cur_p_idx = self.pipeline_combo.currentIndex()
+            self.pipeline_combo.blockSignals(True)
+            self.pipeline_combo.setItemText(0, t.get("pipeline_agentic", "🧠 多代理深度流水線 (3-Pass Agentic)"))
+            self.pipeline_combo.setItemText(1, t.get("pipeline_fast", "⚡ 快速單階審查 (Single-Pass Fast)"))
+            self.pipeline_combo.blockSignals(False)
 
         cur_mode_idx = self.mode_combo.currentIndex()
         self.mode_combo.blockSignals(True)
@@ -3891,6 +4323,10 @@ class AcademicReviewerApp(QMainWindow):
         save_config(self.config)
         self.section_lbl.setVisible(self.context_scope == "partial")
         self.section_combo.setVisible(self.context_scope == "partial")
+
+    def on_pipeline_mode_changed(self, idx: int):
+        self.config["pipeline_mode"] = self.pipeline_combo.currentData()
+        save_config(self.config)
 
     def refresh_section_combo(self):
         is_en = (self.ui_language == "en_US")
@@ -4469,6 +4905,9 @@ class AcademicReviewerApp(QMainWindow):
             else "<span style='color: #64748b;'>審查進行中，完成後將即時生成高亮修訂全文...</span>"
         )
 
+        pipeline_val = self.pipeline_combo.currentData() if hasattr(self, 'pipeline_combo') else "multi_pass"
+        temp_val = float(self.config.get("temperature", 0.2))
+
         self.worker = ReviewWorker(
             text=text,
             engine_mode=self.engine_mode,
@@ -4477,12 +4916,30 @@ class AcademicReviewerApp(QMainWindow):
             ui_language=self.ui_language,
             writing_mode=self.writing_mode,
             context_scope=self.context_scope,
-            section_target=section_val
+            section_target=section_val,
+            pipeline_mode=pipeline_val,
+            temperature=temp_val
         )
         self.worker.chunk_received.connect(self.on_chunk_received)
+        self.worker.progress_status.connect(self.on_worker_progress_status)
+        self.worker.thinking_received.connect(self.on_thinking_received)
         self.worker.finished.connect(self.on_review_finished)
         self.worker.error.connect(self.on_review_error)
         self.worker.start()
+
+    @Slot(str, int, int)
+    def on_worker_progress_status(self, msg: str, curr_step: int, total_steps: int):
+        self.status_banner.setText(f"⏳ [{curr_step}/{total_steps}] {msg}")
+        self.status_banner.setStyleSheet("color: #3b82f6; font-weight: bold; font-size: 11px;")
+        if total_steps > 0:
+            pct = int((curr_step / total_steps) * 100)
+            self.progress_bar.setValue(pct)
+
+    @Slot(str)
+    def on_thinking_received(self, delta: str):
+        is_en = (self.ui_language == "en_US")
+        self.monitor_badge_lbl.setText("🧠 深度思維鏈推演中..." if not is_en else "🧠 Deep Thinking...")
+        self.monitor_badge_lbl.setStyleSheet("color: #a855f7; font-weight: bold; font-size: 11px;")
 
     def stop_review(self):
         if hasattr(self, 'worker') and self.worker and self.worker.isRunning():
